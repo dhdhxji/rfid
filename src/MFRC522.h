@@ -271,8 +271,7 @@ typedef struct {
 
 typedef struct {
 	Uid uid;					// Used by PICC_ReadCardSerial().
-	byte _chipSelectPin;		// Arduino pin connected to MFRC522's SPI slave select input (Pin 24, NSS, active low)
-	byte _resetPowerDownPin;	// Arduino pin connected to MFRC522's reset and power down input (Pin 6, NRSTPD, active low)
+	const MFRC522_cfg_t* cfg;
 } MFRC522_t;
 
 /////////////////////////////////////////////////////////////////////////////////////
