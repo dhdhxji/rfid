@@ -10,7 +10,7 @@
 /////////////////////////////////////////////////////////////////////////////////////
 // Functions for setting up the Arduino
 /////////////////////////////////////////////////////////////////////////////////////
-void MFRC522_init(const MFRC522_t* mfrc, const MFRC522_cfg_t* cfg, MFRC522_t* mfrc) {
+void MFRC522_init(const MFRC522_cfg_t* cfg, MFRC522_t* mfrc) {
 	mfrc->cfg = cfg;
 }
 
@@ -26,10 +26,10 @@ void PCD_WriteRegister(const MFRC522_t* mfrc, 	PCD_Register reg,	///< The regist
 									byte value			///< The value to write.
 								) {
 	SPI.beginTransaction(SPISettings(MFRC522_SPICLOCK, MSBFIRST, SPI_MODE0));	// Set the settings to work with SPI bus
-	digitalWrite(_chipSelectPin, LOW);		// Select slave
+	digitalWrite(mfrc->cfg->chipSelectPin, LOW);		// Select slave
 	SPI.transfer(reg);						// MSB == 0 is for writing. LSB is not used in address. Datasheet section 8.1.2.3.
 	SPI.transfer(value);
-	digitalWrite(_chipSelectPin, HIGH);		// Release slave again
+	digitalWrite(mfrc->cfg->chipSelectPin, HIGH);		// Release slave again
 	SPI.endTransaction(); // Stop using the SPI bus
 } // End PCD_WriteRegister()
 
@@ -42,12 +42,12 @@ void PCD_WriteRegister(const MFRC522_t* mfrc, 	PCD_Register reg,	///< The regist
 									byte *values		///< The values to write. Byte array.
 								) {
 	SPI.beginTransaction(SPISettings(MFRC522_SPICLOCK, MSBFIRST, SPI_MODE0));	// Set the settings to work with SPI bus
-	digitalWrite(_chipSelectPin, LOW);		// Select slave
+	digitalWrite(mfrc->cfg->chipSelectPin, LOW);		// Select slave
 	SPI.transfer(reg);						// MSB == 0 is for writing. LSB is not used in address. Datasheet section 8.1.2.3.
 	for (byte index = 0; index < count; index++) {
 		SPI.transfer(values[index]);
 	}
-	digitalWrite(_chipSelectPin, HIGH);		// Release slave again
+	digitalWrite(mfrc->cfg->chipSelectPin, HIGH);		// Release slave again
 	SPI.endTransaction(); // Stop using the SPI bus
 } // End PCD_WriteRegister()
 
@@ -59,10 +59,10 @@ byte PCD_ReadRegister(const MFRC522_t* mfrc, 	PCD_Register reg	///< The register
 								) {
 	byte value;
 	SPI.beginTransaction(SPISettings(MFRC522_SPICLOCK, MSBFIRST, SPI_MODE0));	// Set the settings to work with SPI bus
-	digitalWrite(_chipSelectPin, LOW);			// Select slave
+	digitalWrite(mfrc->cfg->chipSelectPin, LOW);			// Select slave
 	SPI.transfer(0x80 | reg);					// MSB == 1 is for reading. LSB is not used in address. Datasheet section 8.1.2.3.
 	value = SPI.transfer(0);					// Read the value back. Send 0 to stop reading.
-	digitalWrite(_chipSelectPin, HIGH);			// Release slave again
+	digitalWrite(mfrc->cfg->chipSelectPin, HIGH);			// Release slave again
 	SPI.endTransaction(); // Stop using the SPI bus
 	return value;
 } // End PCD_ReadRegister()
@@ -83,7 +83,7 @@ void PCD_ReadRegister(const MFRC522_t* mfrc, 	PCD_Register reg,	///< The registe
 	byte address = 0x80 | reg;				// MSB == 1 is for reading. LSB is not used in address. Datasheet section 8.1.2.3.
 	byte index = 0;							// Index in values array.
 	SPI.beginTransaction(SPISettings(MFRC522_SPICLOCK, MSBFIRST, SPI_MODE0));	// Set the settings to work with SPI bus
-	digitalWrite(_chipSelectPin, LOW);		// Select slave
+	digitalWrite(mfrc->cfg->chipSelectPin, LOW);		// Select slave
 	count--;								// One read is performed outside of the loop
 	SPI.transfer(address);					// Tell MFRC522 which address we want to read
 	if (rxAlign) {		// Only update bit positions rxAlign..7 in values[0]
@@ -100,7 +100,7 @@ void PCD_ReadRegister(const MFRC522_t* mfrc, 	PCD_Register reg,	///< The registe
 		index++;
 	}
 	values[index] = SPI.transfer(0);			// Read the final byte. Send 0 to stop reading.
-	digitalWrite(_chipSelectPin, HIGH);			// Release slave again
+	digitalWrite(mfrc->cfg->chipSelectPin, HIGH);			// Release slave again
 	SPI.endTransaction(); // Stop using the SPI bus
 } // End PCD_ReadRegister()
 
@@ -178,19 +178,19 @@ void PCD_Init(const MFRC522_t* mfrc) {
 	bool hardReset = false;
 
 	// Set the chipSelectPin as digital output, do not select the slave yet
-	pinMode(_chipSelectPin, OUTPUT);
-	digitalWrite(_chipSelectPin, HIGH);
+	pinMode(mfrc->cfg->chipSelectPin, OUTPUT);
+	digitalWrite(mfrc->cfg->chipSelectPin, HIGH);
 	
 	// If a valid pin number has been set, pull device out of power down / reset state.
-	if (_resetPowerDownPin != UNUSED_PIN) {
+	if (mfrc->cfg->resetPowerDownPin != UNUSED_PIN) {
 		// First set the resetPowerDownPin as digital input, to check the MFRC522 power down mode.
-		pinMode(_resetPowerDownPin, INPUT);
+		pinMode(mfrc->cfg->resetPowerDownPin, INPUT);
 	
-		if (digitalRead(_resetPowerDownPin) == LOW) {	// The MFRC522 chip is in power down mode.
-			pinMode(_resetPowerDownPin, OUTPUT);		// Now set the resetPowerDownPin as digital output.
-			digitalWrite(_resetPowerDownPin, LOW);		// Make sure we have a clean LOW state.
+		if (digitalRead(mfrc->cfg->resetPowerDownPin) == LOW) {	// The MFRC522 chip is in power down mode.
+			pinMode(mfrc->cfg->resetPowerDownPin, OUTPUT);		// Now set the resetPowerDownPin as digital output.
+			digitalWrite(mfrc->cfg->resetPowerDownPin, LOW);		// Make sure we have a clean LOW state.
 			delayMicroseconds(2);				// 8.8.1 Reset timing requirements says about 100ns. Let us be generous: 2μsl
-			digitalWrite(_resetPowerDownPin, HIGH);		// Exit power down mode. This triggers a hard reset.
+			digitalWrite(mfrc->cfg->resetPowerDownPin, HIGH);		// Exit power down mode. This triggers a hard reset.
 			// Section 8.8.2 in the datasheet says the oscillator start-up time is the start up time of the crystal + 37,74μs. Let us be generous: 50ms.
 			delay(50);
 			hardReset = true;
@@ -234,8 +234,8 @@ void PCD_Init(const MFRC522_t* mfrc, 	byte resetPowerDownPin	///< Arduino pin co
 void PCD_Init(const MFRC522_t* mfrc, 	byte chipSelectPin,		///< Arduino pin connected to MFRC522's SPI slave select input (Pin 24, NSS, active low)
 						byte resetPowerDownPin	///< Arduino pin connected to MFRC522's reset and power down input (Pin 6, NRSTPD, active low)
 					) {
-	_chipSelectPin = chipSelectPin;
-	_resetPowerDownPin = resetPowerDownPin; 
+	mfrc->cfg->chipSelectPin = chipSelectPin;
+	mfrc->cfg->resetPowerDownPin = resetPowerDownPin; 
 	// Set the chipSelectPin as digital output, do not select the slave yet
 	PCD_Init();
 } // End PCD_Init()
@@ -617,7 +617,7 @@ StatusCode PICC_REQA_or_WUPA(const MFRC522_t* mfrc, 	byte command, 		///< The co
  * @return STATUS_OK on success, STATUS_??? otherwise.
  */
 StatusCode PICC_Select(const MFRC522_t* mfrc, 	Uid *uid,			///< Pointer to Uid struct. Normally output, but can also be used to supply a known UID.
-											byte validBits		///< The number of known UID bits supplied in *uid. Normally 0. If set you must also supply uid->size.
+											byte validBits		///< The number of known UID bits supplied in *uid. Normally 0. If set you must also supply mfrc->uid->size.
 										 ) {
 	bool uidComplete;
 	bool selectDone;
@@ -627,7 +627,7 @@ StatusCode PICC_Select(const MFRC522_t* mfrc, 	Uid *uid,			///< Pointer to Uid s
 	byte count;
 	byte checkBit;
 	byte index;
-	byte uidIndex;					// The first index in uid->uidByte[] that is used in the current Cascade Level.
+	byte uidIndex;					// The first index in mfrc->uid->uidByte[] that is used in the current Cascade Level.
 	int8_t currentLevelKnownBits;		// The number of known UID bits in the current Cascade Level.
 	byte buffer[9];					// The SELECT/ANTICOLLISION commands uses a 7 byte standard frame + 2 bytes CRC_A
 	byte bufferUsed;				// The number of bytes used in the buffer, ie the number of bytes to transfer to the FIFO.
@@ -674,13 +674,13 @@ StatusCode PICC_Select(const MFRC522_t* mfrc, 	Uid *uid,			///< Pointer to Uid s
 			case 1:
 				buffer[0] = PICC_CMD_SEL_CL1;
 				uidIndex = 0;
-				useCascadeTag = validBits && uid->size > 4;	// When we know that the UID has more than 4 bytes
+				useCascadeTag = validBits && mfrc->uid->size > 4;	// When we know that the UID has more than 4 bytes
 				break;
 			
 			case 2:
 				buffer[0] = PICC_CMD_SEL_CL2;
 				uidIndex = 3;
-				useCascadeTag = validBits && uid->size > 7;	// When we know that the UID has more than 7 bytes
+				useCascadeTag = validBits && mfrc->uid->size > 7;	// When we know that the UID has more than 7 bytes
 				break;
 			
 			case 3:
@@ -699,7 +699,7 @@ StatusCode PICC_Select(const MFRC522_t* mfrc, 	Uid *uid,			///< Pointer to Uid s
 		if (currentLevelKnownBits < 0) {
 			currentLevelKnownBits = 0;
 		}
-		// Copy the known bits from uid->uidByte[] to buffer[]
+		// Copy the known bits from mfrc->uid->uidByte[] to buffer[]
 		index = 2; // destination index in buffer[]
 		if (useCascadeTag) {
 			buffer[index++] = PICC_CMD_CT;
@@ -711,7 +711,7 @@ StatusCode PICC_Select(const MFRC522_t* mfrc, 	Uid *uid,			///< Pointer to Uid s
 				bytesToCopy = maxBytes;
 			}
 			for (count = 0; count < bytesToCopy; count++) {
-				buffer[index++] = uid->uidByte[uidIndex + count];
+				buffer[index++] = mfrc->uid->uidByte[uidIndex + count];
 			}
 		}
 		// Now that the data has been copied we need to include the 8 bits in CT in currentLevelKnownBits
@@ -794,11 +794,11 @@ StatusCode PICC_Select(const MFRC522_t* mfrc, 	Uid *uid,			///< Pointer to Uid s
 		
 		// We do not check the CBB - it was constructed by us above.
 		
-		// Copy the found UID bytes from buffer[] to uid->uidByte[]
+		// Copy the found UID bytes from buffer[] to mfrc->uid->uidByte[]
 		index			= (buffer[2] == PICC_CMD_CT) ? 3 : 2; // source index in buffer[]
 		bytesToCopy		= (buffer[2] == PICC_CMD_CT) ? 3 : 4;
 		for (count = 0; count < bytesToCopy; count++) {
-			uid->uidByte[uidIndex + count] = buffer[index++];
+			mfrc->uid->uidByte[uidIndex + count] = buffer[index++];
 		}
 		
 		// Check response SAK (Select Acknowledge)
@@ -818,12 +818,12 @@ StatusCode PICC_Select(const MFRC522_t* mfrc, 	Uid *uid,			///< Pointer to Uid s
 		}
 		else {
 			uidComplete = true;
-			uid->sak = responseBuffer[0];
+			mfrc->uid->sak = responseBuffer[0];
 		}
 	} // End of while (!uidComplete)
 	
-	// Set correct uid->size
-	uid->size = 3 * cascadeLevel + 1;
+	// Set correct mfrc->uid->size
+	mfrc->uid->size = 3 * cascadeLevel + 1;
 
 	return STATUS_OK;
 } // End PICC_Select()
@@ -896,7 +896,7 @@ StatusCode PCD_Authenticate(const MFRC522_t* mfrc, byte command,		///< PICC_CMD_
 	// The only missed case is the MF1Sxxxx shortcut activation,
 	// but it requires cascade tag (CT) byte, that is not part of uid.
 	for (byte i = 0; i < 4; i++) {				// The last 4 bytes of the UID
-		sendData[8+i] = uid->uidByte[i+uid->size-4];
+		sendData[8+i] = mfrc->uid->uidByte[i+mfrc->uid->size-4];
 	}
 	
 	// Start the authentication.
@@ -1378,7 +1378,7 @@ void PICC_DumpToSerial(const MFRC522_t* mfrc, Uid *uid	///< Pointer to Uid struc
 	PICC_DumpDetailsToSerial(uid);
 	
 	// Dump contents
-	PICC_Type piccType = PICC_GetType(uid->sak);
+	PICC_Type piccType = PICC_GetType(mfrc->uid->sak);
 	switch (piccType) {
 		case PICC_TYPE_MIFARE_MINI:
 		case PICC_TYPE_MIFARE_1K:
@@ -1419,23 +1419,23 @@ void PICC_DumpDetailsToSerial(const MFRC522_t* mfrc, Uid *uid	///< Pointer to Ui
 									) {
 	// UID
 	Serial.print(F("Card UID:"));
-	for (byte i = 0; i < uid->size; i++) {
-		if(uid->uidByte[i] < 0x10)
+	for (byte i = 0; i < mfrc->uid->size; i++) {
+		if(mfrc->uid->uidByte[i] < 0x10)
 			Serial.print(F(" 0"));
 		else
 			Serial.print(F(" "));
-		Serial.print(uid->uidByte[i], HEX);
+		Serial.print(mfrc->uid->uidByte[i], HEX);
 	} 
 	Serial.println();
 	
 	// SAK
 	Serial.print(F("Card SAK: "));
-	if(uid->sak < 0x10)
+	if(mfrc->uid->sak < 0x10)
 		Serial.print(F("0"));
-	Serial.println(uid->sak, HEX);
+	Serial.println(mfrc->uid->sak, HEX);
 	
 	// (suggested) PICC type
-	PICC_Type piccType = PICC_GetType(uid->sak);
+	PICC_Type piccType = PICC_GetType(mfrc->uid->sak);
 	Serial.print(F("PICC type: "));
 	Serial.println(PICC_GetTypeName(piccType));
 } // End PICC_DumpDetailsToSerial()
