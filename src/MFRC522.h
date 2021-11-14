@@ -159,7 +159,7 @@ typedef enum {
 } PCD_Register;
 	
 // MFRC522 commands. Described in chapter 10 of the datasheet.
-tyoedef enum {
+typedef enum {
 	PCD_Idle				= 0x00,		// no action, cancels current command execution
 	PCD_Mem					= 0x01,		// stores 25 bytes into the internal buffer
 	PCD_GenerateRandomID	= 0x02,		// generates a 10-byte random ID number
@@ -286,89 +286,89 @@ void MFRC522_init(const MFRC522_cfg_t* cfg, MFRC522_t* mfrc);
 /////////////////////////////////////////////////////////////////////////////////////
 // Basic interface functions for communicating with the MFRC522
 /////////////////////////////////////////////////////////////////////////////////////
-void PCD_WriteRegister(const MFRC522_t* mfrc, PCD_Register reg, byte value);
-void PCD_WriteRegister(const MFRC522_t* mfrc, PCD_Register reg, byte count, byte *values);
-byte PCD_ReadRegister(const MFRC522_t* mfrc, PCD_Register reg);
-void PCD_ReadRegister(const MFRC522_t* mfrc, PCD_Register reg, byte count, byte *values, byte rxAlign = 0);
-void PCD_SetRegisterBitMask(const MFRC522_t* mfrc, PCD_Register reg, byte mask);
-void PCD_ClearRegisterBitMask(const MFRC522_t* mfrc, PCD_Register reg, byte mask);
-StatusCode PCD_CalculateCRC(const MFRC522_t* mfrc, byte *data, byte length, byte *result);
+void PCD_WriteRegister(MFRC522_t* mfrc, PCD_Register reg, byte value);
+void PCD_WriteRegister(MFRC522_t* mfrc, PCD_Register reg, byte count, byte *values);
+byte PCD_ReadRegister(MFRC522_t* mfrc, PCD_Register reg);
+void PCD_ReadRegister(MFRC522_t* mfrc, PCD_Register reg, byte count, byte *values, byte rxAlign /*  = 0 */);
+void PCD_SetRegisterBitMask(MFRC522_t* mfrc, PCD_Register reg, byte mask);
+void PCD_ClearRegisterBitMask(MFRC522_t* mfrc, PCD_Register reg, byte mask);
+StatusCode PCD_CalculateCRC(MFRC522_t* mfrc, byte *data, byte length, byte *result);
 
 /////////////////////////////////////////////////////////////////////////////////////
 // Functions for manipulating the MFRC522
 /////////////////////////////////////////////////////////////////////////////////////
-void PCD_Reset(const MFRC522_t* mfrc);
-void PCD_AntennaOn(const MFRC522_t* mfrc);
-void PCD_AntennaOff(const MFRC522_t* mfrc);
-byte PCD_GetAntennaGain(const MFRC522_t* mfrc);
-void PCD_SetAntennaGain(const MFRC522_t* mfrc, byte mask);
-bool PCD_PerformSelfTest(const MFRC522_t* mfrc);
+void PCD_Reset(MFRC522_t* mfrc);
+void PCD_AntennaOn(MFRC522_t* mfrc);
+void PCD_AntennaOff(MFRC522_t* mfrc);
+byte PCD_GetAntennaGain(MFRC522_t* mfrc);
+void PCD_SetAntennaGain(MFRC522_t* mfrc, byte mask);
+bool PCD_PerformSelfTest(MFRC522_t* mfrc);
 
 /////////////////////////////////////////////////////////////////////////////////////
 // Power control functions
 /////////////////////////////////////////////////////////////////////////////////////
-void PCD_SoftPowerDown(const MFRC522_t* mfrc);
-void PCD_SoftPowerUp(const MFRC522_t* mfrc);
+void PCD_SoftPowerDown(MFRC522_t* mfrc);
+void PCD_SoftPowerUp(MFRC522_t* mfrc);
 
 /////////////////////////////////////////////////////////////////////////////////////
 // Functions for communicating with PICCs
 /////////////////////////////////////////////////////////////////////////////////////
-StatusCode PCD_TransceiveData(const MFRC522_t* mfrc, byte *sendData, byte sendLen, byte *backData, byte *backLen, byte *validBits = nullptr, byte rxAlign = 0, bool checkCRC = false);
-StatusCode PCD_CommunicateWithPICC(const MFRC522_t* mfrc, byte command, byte waitIRq, byte *sendData, byte sendLen, byte *backData = nullptr, byte *backLen = nullptr, byte *validBits = nullptr, byte rxAlign = 0, bool checkCRC = false);
-StatusCode PICC_RequestA(const MFRC522_t* mfrc, byte *bufferATQA, byte *bufferSize);
-StatusCode PICC_WakeupA(const MFRC522_t* mfrc, byte *bufferATQA, byte *bufferSize);
-StatusCode PICC_REQA_or_WUPA(const MFRC522_t* mfrc, byte command, byte *bufferATQA, byte *bufferSize);
-virtual StatusCode PICC_Select(const MFRC522_t* mfrc, Uid *uid, byte validBits = 0);
-StatusCode PICC_HaltA(const MFRC522_t* mfrc);
+StatusCode PCD_TransceiveData(MFRC522_t* mfrc, byte *sendData, byte sendLen, byte *backData, byte *backLen, byte *validBits /*  = nullptr */, byte rxAlign /*  = 0 */, bool checkCRC /*  = false */);
+StatusCode PCD_CommunicateWithPICC(MFRC522_t* mfrc, byte command, byte waitIRq, byte *sendData, byte sendLen, byte *backData /*  = nullptr */, byte *backLen /*  = nullptr */, byte *validBits /*  = nullptr */, byte rxAlign /*  = 0 */, bool checkCRC /*  = false */);
+StatusCode PICC_RequestA(MFRC522_t* mfrc, byte *bufferATQA, byte *bufferSize);
+StatusCode PICC_WakeupA(MFRC522_t* mfrc, byte *bufferATQA, byte *bufferSize);
+StatusCode PICC_REQA_or_WUPA(MFRC522_t* mfrc, byte command, byte *bufferATQA, byte *bufferSize);
+StatusCode PICC_Select(MFRC522_t* mfrc, Uid *uid, byte validBits /*  = 0 */);
+StatusCode PICC_HaltA(MFRC522_t* mfrc);
 
 /////////////////////////////////////////////////////////////////////////////////////
 // Functions for communicating with MIFARE PICCs
 /////////////////////////////////////////////////////////////////////////////////////
-StatusCode PCD_Authenticate(const MFRC522_t* mfrc, byte command, byte blockAddr, MIFARE_Key *key, Uid *uid);
-void PCD_StopCrypto1(const MFRC522_t* mfrc);
-StatusCode MIFARE_Read(const MFRC522_t* mfrc, byte blockAddr, byte *buffer, byte *bufferSize);
-StatusCode MIFARE_Write(const MFRC522_t* mfrc, byte blockAddr, byte *buffer, byte bufferSize);
-StatusCode MIFARE_Ultralight_Write(const MFRC522_t* mfrc, byte page, byte *buffer, byte bufferSize);
-StatusCode MIFARE_Decrement(const MFRC522_t* mfrc, byte blockAddr, int32_t delta);
-StatusCode MIFARE_Increment(const MFRC522_t* mfrc, byte blockAddr, int32_t delta);
-StatusCode MIFARE_Restore(const MFRC522_t* mfrc, byte blockAddr);
-StatusCode MIFARE_Transfer(const MFRC522_t* mfrc, byte blockAddr);
-StatusCode MIFARE_GetValue(const MFRC522_t* mfrc, byte blockAddr, int32_t *value);
-StatusCode MIFARE_SetValue(const MFRC522_t* mfrc, byte blockAddr, int32_t value);
-StatusCode PCD_NTAG216_AUTH(const MFRC522_t* mfrc, byte *passWord, byte pACK[]);
+StatusCode PCD_Authenticate(MFRC522_t* mfrc, byte command, byte blockAddr, MIFARE_Key *key, Uid *uid);
+void PCD_StopCrypto1(MFRC522_t* mfrc);
+StatusCode MIFARE_Read(MFRC522_t* mfrc, byte blockAddr, byte *buffer, byte *bufferSize);
+StatusCode MIFARE_Write(MFRC522_t* mfrc, byte blockAddr, byte *buffer, byte bufferSize);
+StatusCode MIFARE_Ultralight_Write(MFRC522_t* mfrc, byte page, byte *buffer, byte bufferSize);
+StatusCode MIFARE_Decrement(MFRC522_t* mfrc, byte blockAddr, int32_t delta);
+StatusCode MIFARE_Increment(MFRC522_t* mfrc, byte blockAddr, int32_t delta);
+StatusCode MIFARE_Restore(MFRC522_t* mfrc, byte blockAddr);
+StatusCode MIFARE_Transfer(MFRC522_t* mfrc, byte blockAddr);
+StatusCode MIFARE_GetValue(MFRC522_t* mfrc, byte blockAddr, int32_t *value);
+StatusCode MIFARE_SetValue(MFRC522_t* mfrc, byte blockAddr, int32_t value);
+StatusCode PCD_NTAG216_AUTH(MFRC522_t* mfrc, byte *passWord, byte pACK[]);
 
 /////////////////////////////////////////////////////////////////////////////////////
 // Support functions
 /////////////////////////////////////////////////////////////////////////////////////
-StatusCode PCD_MIFARE_Transceive(const MFRC522_t* mfrc, byte *sendData, byte sendLen, bool acceptTimeout = false);
+StatusCode PCD_MIFARE_Transceive(MFRC522_t* mfrc, byte *sendData, byte sendLen, bool acceptTimeout /*  = false */);
 // old function used too much memory, now name moved to flash; if you need char, copy from flash to memory
 //const char *GetStatusCodeName(byte code);
-static const __FlashStringHelper *GetStatusCodeName(const MFRC522_t* mfrc, StatusCode code);
-static PICC_Type PICC_GetType(const MFRC522_t* mfrc, byte sak);
+static const __FlashStringHelper *GetStatusCodeName(MFRC522_t* mfrc, StatusCode code);
+static PICC_Type PICC_GetType(MFRC522_t* mfrc, byte sak);
 // old function used too much memory, now name moved to flash; if you need char, copy from flash to memory
 //const char *PICC_GetTypeName(byte type);
-static const __FlashStringHelper *PICC_GetTypeName(const MFRC522_t* mfrc, PICC_Type type);
+static const __FlashStringHelper *PICC_GetTypeName(MFRC522_t* mfrc, PICC_Type type);
 
 // Support functions for debuging
-void PCD_DumpVersionToSerial(const MFRC522_t* mfrc);
-void PICC_DumpToSerial(const MFRC522_t* mfrc, Uid *uid);
-void PICC_DumpDetailsToSerial(const MFRC522_t* mfrc, Uid *uid);
-void PICC_DumpMifareClassicToSerial(const MFRC522_t* mfrc, Uid *uid, PICC_Type piccType, MIFARE_Key *key);
-void PICC_DumpMifareClassicSectorToSerial(const MFRC522_t* mfrc, Uid *uid, MIFARE_Key *key, byte sector);
-void PICC_DumpMifareUltralightToSerial(const MFRC522_t* mfrc);
+void PCD_DumpVersionToSerial(MFRC522_t* mfrc);
+void PICC_DumpToSerial(MFRC522_t* mfrc, Uid *uid);
+void PICC_DumpDetailsToSerial(MFRC522_t* mfrc, Uid *uid);
+void PICC_DumpMifareClassicToSerial(MFRC522_t* mfrc, Uid *uid, PICC_Type piccType, MIFARE_Key *key);
+void PICC_DumpMifareClassicSectorToSerial(MFRC522_t* mfrc, Uid *uid, MIFARE_Key *key, byte sector);
+void PICC_DumpMifareUltralightToSerial(MFRC522_t* mfrc);
 
 // Advanced functions for MIFARE
-void MIFARE_SetAccessBits(const MFRC522_t* mfrc, byte *accessBitBuffer, byte g0, byte g1, byte g2, byte g3);
-bool MIFARE_OpenUidBackdoor(const MFRC522_t* mfrc, bool logErrors);
-bool MIFARE_SetUid(const MFRC522_t* mfrc, byte *newUid, byte uidSize, bool logErrors);
-bool MIFARE_UnbrickUidSector(const MFRC522_t* mfrc, bool logErrors);
+void MIFARE_SetAccessBits(MFRC522_t* mfrc, byte *accessBitBuffer, byte g0, byte g1, byte g2, byte g3);
+bool MIFARE_OpenUidBackdoor(MFRC522_t* mfrc, bool logErrors);
+bool MIFARE_SetUid(MFRC522_t* mfrc, byte *newUid, byte uidSize, bool logErrors);
+bool MIFARE_UnbrickUidSector(MFRC522_t* mfrc, bool logErrors);
 
 /////////////////////////////////////////////////////////////////////////////////////
 // Convenience functions - does not add extra functionality
 /////////////////////////////////////////////////////////////////////////////////////
-bool PICC_IsNewCardPresent(const MFRC522_t* mfrc);
-bool PICC_ReadCardSerial(const MFRC522_t* mfrc);
+bool PICC_IsNewCardPresent(MFRC522_t* mfrc);
+bool PICC_ReadCardSerial(MFRC522_t* mfrc);
 
-StatusCode MIFARE_TwoStepHelper(const MFRC522_t* mfrc, byte command, byte blockAddr, int32_t data);
+StatusCode MIFARE_TwoStepHelper(MFRC522_t* mfrc, byte command, byte blockAddr, int32_t data);
 
 #endif
