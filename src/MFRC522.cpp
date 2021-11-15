@@ -219,7 +219,7 @@ StatusCode PCD_CalculateCRC(
 		}
 		yield();
 	}
-	while (static_cast<uint32_t> (millis()) < deadline);
+	while ((uint32_t)(millis()) < deadline);
 
 	// 89ms passed and nothing happened. Communication with the MFRC522 might be down.
 	return STATUS_TIMEOUT;
@@ -495,7 +495,7 @@ StatusCode PCD_CommunicateWithPICC(
 		}
 		yield();
 	}
-	while (static_cast<uint32_t> (millis()) < deadline);
+	while ((uint32_t)(millis()) < deadline);
 
 	// 36ms and nothing happened. Communication with the MFRC522 might be down.
 	if (!completed) {
