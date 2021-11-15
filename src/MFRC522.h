@@ -313,8 +313,29 @@ void PCD_SoftPowerUp(MFRC522_t* mfrc);
 /////////////////////////////////////////////////////////////////////////////////////
 // Functions for communicating with PICCs
 /////////////////////////////////////////////////////////////////////////////////////
-StatusCode PCD_TransceiveData(MFRC522_t* mfrc, byte *sendData, byte sendLen, byte *backData, byte *backLen, byte *validBits /*  = nullptr */, byte rxAlign /*  = 0 */, bool checkCRC /*  = false */);
-StatusCode PCD_CommunicateWithPICC(MFRC522_t* mfrc, byte command, byte waitIRq, byte *sendData, byte sendLen, byte *backData /*  = nullptr */, byte *backLen /*  = nullptr */, byte *validBits /*  = nullptr */, byte rxAlign /*  = 0 */, bool checkCRC /*  = false */);
+StatusCode PCD_TransceiveData(
+	MFRC522_t* mfrc, 
+	byte *sendData, 
+	byte sendLen, 
+	byte *backData, 
+	byte *backLen, 
+	byte *validBits /*  = nullptr */, 
+	byte rxAlign /*  = 0 */, 
+	bool checkCRC /*  = false */
+);
+
+StatusCode PCD_CommunicateWithPICC(
+	MFRC522_t* mfrc, 
+	byte command, 
+	byte waitIRq, 
+	byte *sendData, 
+	byte sendLen, 
+	byte *backData /*  = nullptr */, 
+	byte *backLen /*  = nullptr */, 
+	byte *validBits /*  = nullptr */, 
+	byte rxAlign /*  = 0 */, 
+	bool checkCRC /*  = false */
+);
 StatusCode PICC_RequestA(MFRC522_t* mfrc, byte *bufferATQA, byte *bufferSize);
 StatusCode PICC_WakeupA(MFRC522_t* mfrc, byte *bufferATQA, byte *bufferSize);
 StatusCode PICC_REQA_or_WUPA(MFRC522_t* mfrc, byte command, byte *bufferATQA, byte *bufferSize);
@@ -340,7 +361,12 @@ StatusCode PCD_NTAG216_AUTH(MFRC522_t* mfrc, byte *passWord, byte pACK[]);
 /////////////////////////////////////////////////////////////////////////////////////
 // Support functions
 /////////////////////////////////////////////////////////////////////////////////////
-StatusCode PCD_MIFARE_Transceive(MFRC522_t* mfrc, byte *sendData, byte sendLen, bool acceptTimeout /*  = false */);
+StatusCode PCD_MIFARE_Transceive(
+	MFRC522_t* mfrc, 
+	byte *sendData, 
+	byte sendLen, 
+	bool acceptTimeout /*  = false */
+);
 // old function used too much memory, now name moved to flash; if you need char, copy from flash to memory
 //const char *GetStatusCodeName(byte code);
 static const __FlashStringHelper *GetStatusCodeName(MFRC522_t* mfrc, StatusCode code);
