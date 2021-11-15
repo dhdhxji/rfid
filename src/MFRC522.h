@@ -369,7 +369,7 @@ StatusCode PCD_MIFARE_Transceive(
 );
 // old function used too much memory, now name moved to flash; if you need char, copy from flash to memory
 //const char *GetStatusCodeName(byte code);
-static const __FlashStringHelper *GetStatusCodeName(MFRC522_t* mfrc, StatusCode code);
+static const __FlashStringHelper *GetStatusCodeName(StatusCode code);
 static PICC_Type PICC_GetType(MFRC522_t* mfrc, byte sak);
 // old function used too much memory, now name moved to flash; if you need char, copy from flash to memory
 //const char *PICC_GetTypeName(byte type);

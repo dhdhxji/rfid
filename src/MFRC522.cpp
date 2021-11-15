@@ -1678,7 +1678,7 @@ void PICC_DumpMifareClassicSectorToSerial(
 			status = PCD_Authenticate(mfrc, PICC_CMD_MF_AUTH_KEY_A, firstBlock, key, uid);
 			if (status != STATUS_OK) {
 				Serial.print(F("PCD_Authenticate() failed: "));
-				Serial.println(GetStatusCodeName(mfrc, status));
+				Serial.println(GetStatusCodeName(status));
 				return;
 			}
 		}
@@ -1687,7 +1687,7 @@ void PICC_DumpMifareClassicSectorToSerial(
 		status = MIFARE_Read(mfrc, blockAddr, buffer, &byteCount);
 		if (status != STATUS_OK) {
 			Serial.print(F("MIFARE_Read() failed: "));
-			Serial.println(GetStatusCodeName(mfrc, status));
+			Serial.println(GetStatusCodeName(status));
 			continue;
 		}
 		// Dump data
@@ -1767,7 +1767,7 @@ void PICC_DumpMifareUltralightToSerial(MFRC522_t* mfrc) {
 		status = MIFARE_Read(mfrc, page, buffer, &byteCount);
 		if (status != STATUS_OK) {
 			Serial.print(F("MIFARE_Read() failed: "));
-			Serial.println(GetStatusCodeName(mfrc, status));
+			Serial.println(GetStatusCodeName(status));
 			break;
 		}
 		// Dump data
@@ -1845,7 +1845,7 @@ bool MIFARE_OpenUidBackdoor(MFRC522_t* mfrc, bool logErrors) {
 		if(logErrors) {
 			Serial.println(F("Card did not respond to 0x40 after HALT command. Are you sure it is a UID changeable one?"));
 			Serial.print(F("Error name: "));
-			Serial.println(GetStatusCodeName(mfrc, status));
+			Serial.println(GetStatusCodeName(status));
 		}
 		return false;
 	}
@@ -1867,7 +1867,7 @@ bool MIFARE_OpenUidBackdoor(MFRC522_t* mfrc, bool logErrors) {
 		if(logErrors) {
 			Serial.println(F("Error in communication at command 0x43, after successfully executing 0x40"));
 			Serial.print(F("Error name: "));
-			Serial.println(GetStatusCodeName(mfrc, status));
+			Serial.println(GetStatusCodeName(status));
 		}
 		return false;
 	}
@@ -1927,7 +1927,7 @@ bool MIFARE_SetUid(MFRC522_t* mfrc, byte *newUid, byte uidSize, bool logErrors) 
 				// We tried, time to give up
 				if (logErrors) {
 					Serial.println(F("Failed to authenticate to card for reading, could not set UID: "));
-					Serial.println(GetStatusCodeName(mfrc, status));
+					Serial.println(GetStatusCodeName(status));
 				}
 				return false;
 			}
@@ -1935,7 +1935,7 @@ bool MIFARE_SetUid(MFRC522_t* mfrc, byte *newUid, byte uidSize, bool logErrors) 
 		else {
 			if (logErrors) {
 				Serial.print(F("PCD_Authenticate() failed: "));
-				Serial.println(GetStatusCodeName(mfrc, status));
+				Serial.println(GetStatusCodeName(status));
 			}
 			return false;
 		}
@@ -1948,7 +1948,7 @@ bool MIFARE_SetUid(MFRC522_t* mfrc, byte *newUid, byte uidSize, bool logErrors) 
 	if (status != STATUS_OK) {
 		if (logErrors) {
 			Serial.print(F("MIFARE_Read() failed: "));
-			Serial.println(GetStatusCodeName(mfrc, status));
+			Serial.println(GetStatusCodeName(status));
 			Serial.println(F("Are you sure your KEY A for sector 0 is 0xFFFFFFFFFFFF?"));
 		}
 		return false;
@@ -1980,7 +1980,7 @@ bool MIFARE_SetUid(MFRC522_t* mfrc, byte *newUid, byte uidSize, bool logErrors) 
 	if (status != STATUS_OK) {
 		if (logErrors) {
 			Serial.print(F("MIFARE_Write() failed: "));
-			Serial.println(GetStatusCodeName(mfrc, status));
+			Serial.println(GetStatusCodeName(status));
 		}
 		return false;
 	}
@@ -2006,7 +2006,7 @@ bool MIFARE_UnbrickUidSector(MFRC522_t* mfrc, bool logErrors) {
 	if (status != STATUS_OK) {
 		if (logErrors) {
 			Serial.print(F("MIFARE_Write() failed: "));
-			Serial.println(GetStatusCodeName(mfrc, status));
+			Serial.println(GetStatusCodeName(status));
 		}
 		return false;
 	}
