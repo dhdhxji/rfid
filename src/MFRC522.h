@@ -261,9 +261,41 @@ typedef struct {
 } MIFARE_Key;
 
 
+/*
+ *	Configuration structures
+*/
+typedef enum {
+	INPUT,
+	OUTPUT
+} MFRC_GPIO_direction_t;
+
+typedef enum {
+	LOW = 0,
+	HIGH = 1
+} MFRC_GPIO_level_t;
+
+typedef struct {
+	/**
+	 * @brief Callback function to set the logic level on the pin. 
+	 */
+	void (*set_level)(uint8_t pin, uint8_t level, void* ctx);
+
+	/**
+	 * @brief Callback function to read the logic level on the pin
+	 */
+	uint8_t (*get_level)(uint8_t pin, void* ctx);
+
+	/**
+	 * @brief Context pointer, that will be sent to get/set callbacks.
+	 */
+	void* ctx;
+} MFRC522_GPIO_cfg_t;
+
 typedef struct {
 	uint8_t chipSelectPin;
 	uint8_t resetPowerDownPin;
+
+	MFRC522_GPIO_cfg_t gpio_cfg;
 } MFRC522_cfg_t;
 
 typedef struct {

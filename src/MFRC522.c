@@ -6,6 +6,14 @@
 
 #include "MFRC522.h"
 
+#define GPIO_SET_LEVEL(mfrc, io, level) \
+	mfrc->cfg->gpio_cfg.set_level((io), (level), mfrc->cfg->gpio_cfg.ctx)
+
+#define GPIO_GET_LEVEL(mfrc, io, level) \
+	mfrc->cfg->gpio_cfg.get_level((io), mfrc->cfg->gpio_cfg.ctx)
+
+
+
 /////////////////////////////////////////////////////////////////////////////////////
 // Functions for setting up the Arduino
 /////////////////////////////////////////////////////////////////////////////////////
@@ -16,28 +24,28 @@ void MFRC522_init(const MFRC522_cfg_t* cfg, MFRC522_t* mfrc) {
 	bool hardReset = false;
 
 	// Set the chipSelectPin as digital output, do not select the slave yet
-	pinMode(mfrc->cfg->chipSelectPin, OUTPUT);
-	digitalWrite(mfrc->cfg->chipSelectPin, HIGH);
+	//pinMode(mfrc->cfg->chipSelectPin, OUTPUT);
+	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, HIGH);
 	
 	// If a valid pin number has been set, pull device out of power down / reset state.
-	if (mfrc->cfg->resetPowerDownPin != UNUSED_PIN) {
+	/*if (mfrc->cfg->resetPowerDownPin != UNUSED_PIN) {
 		// First set the resetPowerDownPin as digital input, to check the MFRC522 power down mode.
 		pinMode(mfrc->cfg->resetPowerDownPin, INPUT);
 	
 		if (digitalRead(mfrc->cfg->resetPowerDownPin) == LOW) {	// The MFRC522 chip is in power down mode.
 			pinMode(mfrc->cfg->resetPowerDownPin, OUTPUT);		// Now set the resetPowerDownPin as digital output.
-			digitalWrite(mfrc->cfg->resetPowerDownPin, LOW);		// Make sure we have a clean LOW state.
+			GPIO_SET_LEVEL(mfrc, mfrc->cfg->resetPowerDownPin, LOW);		// Make sure we have a clean LOW state.
 			delayMicroseconds(2);				// 8.8.1 Reset timing requirements says about 100ns. Let us be generous: 2μsl
-			digitalWrite(mfrc->cfg->resetPowerDownPin, HIGH);		// Exit power down mode. This triggers a hard reset.
+			GPIO_SET_LEVEL(mfrc, mfrc->cfg->resetPowerDownPin, HIGH);		// Exit power down mode. This triggers a hard reset.
 			// Section 8.8.2 in the datasheet says the oscillator start-up time is the start up time of the crystal + 37,74μs. Let us be generous: 50ms.
 			delay(50);
 			hardReset = true;
 		}
-	}
+	}*/
 
-	if (!hardReset) { // Perform a soft reset if we haven't triggered a hard reset above.
-		PCD_Reset(mfrc);
-	}
+	//if (!hardReset) { // Perform a soft reset if we haven't triggered a hard reset above.
+	PCD_Reset(mfrc);
+	//}
 	
 	// Reset baud rates
 	PCD_WriteRegister(mfrc, TxModeReg, 0x00);
@@ -72,10 +80,10 @@ void PCD_WriteRegister(
 	uint8_t value			///< The value to write.
 ) {
 	SPI.beginTransaction(SPISettings(MFRC522_SPICLOCK, MSBFIRST, SPI_MODE0));	// Set the settings to work with SPI bus
-	digitalWrite(mfrc->cfg->chipSelectPin, LOW);		// Select slave
+	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, LOW);		// Select slave
 	SPI.transfer(reg);						// MSB == 0 is for writing. LSB is not used in address. Datasheet section 8.1.2.3.
 	SPI.transfer(value);
-	digitalWrite(mfrc->cfg->chipSelectPin, HIGH);		// Release slave again
+	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, HIGH);		// Release slave again
 	SPI.endTransaction(); // Stop using the SPI bus
 } // End PCD_WriteRegister()
 
@@ -90,12 +98,12 @@ void PCD_WriteRegister(
 	uint8_t* values		///< The values to write. uint8_t array.
 ) {
 	SPI.beginTransaction(SPISettings(MFRC522_SPICLOCK, MSBFIRST, SPI_MODE0));	// Set the settings to work with SPI bus
-	digitalWrite(mfrc->cfg->chipSelectPin, LOW);		// Select slave
+	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, LOW);		// Select slave
 	SPI.transfer(reg);						// MSB == 0 is for writing. LSB is not used in address. Datasheet section 8.1.2.3.
 	for (uint8_t index = 0; index < count; index++) {
 		SPI.transfer(values[index]);
 	}
-	digitalWrite(mfrc->cfg->chipSelectPin, HIGH);		// Release slave again
+	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, HIGH);		// Release slave again
 	SPI.endTransaction(); // Stop using the SPI bus
 } // End PCD_WriteRegister()
 
@@ -109,10 +117,10 @@ uint8_t PCD_ReadRegister(
 ) {
 	uint8_t value;
 	SPI.beginTransaction(SPISettings(MFRC522_SPICLOCK, MSBFIRST, SPI_MODE0));	// Set the settings to work with SPI bus
-	digitalWrite(mfrc->cfg->chipSelectPin, LOW);			// Select slave
+	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, LOW);			// Select slave
 	SPI.transfer(0x80 | reg);					// MSB == 1 is for reading. LSB is not used in address. Datasheet section 8.1.2.3.
 	value = SPI.transfer(0);					// Read the value back. Send 0 to stop reading.
-	digitalWrite(mfrc->cfg->chipSelectPin, HIGH);			// Release slave again
+	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, HIGH);			// Release slave again
 	SPI.endTransaction(); // Stop using the SPI bus
 	return value;
 } // End PCD_ReadRegister()
@@ -135,7 +143,7 @@ void PCD_ReadRegister(
 	uint8_t address = 0x80 | reg;				// MSB == 1 is for reading. LSB is not used in address. Datasheet section 8.1.2.3.
 	uint8_t index = 0;							// Index in values array.
 	SPI.beginTransaction(SPISettings(MFRC522_SPICLOCK, MSBFIRST, SPI_MODE0));	// Set the settings to work with SPI bus
-	digitalWrite(mfrc->cfg->chipSelectPin, LOW);		// Select slave
+	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, LOW);		// Select slave
 	count--;								// One read is performed outside of the loop
 	SPI.transfer(address);					// Tell MFRC522 which address we want to read
 	if (rxAlign) {		// Only update bit positions rxAlign..7 in values[0]
@@ -152,7 +160,7 @@ void PCD_ReadRegister(
 		index++;
 	}
 	values[index] = SPI.transfer(0);			// Read the final byte. Send 0 to stop reading.
-	digitalWrite(mfrc->cfg->chipSelectPin, HIGH);			// Release slave again
+	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, HIGH);			// Release slave again
 	SPI.endTransaction(); // Stop using the SPI bus
 } // End PCD_ReadRegister()
 
