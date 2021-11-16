@@ -48,21 +48,21 @@ void MFRC522_init(const MFRC522_cfg_t* cfg, MFRC522_t* mfrc) {
 	//}
 	
 	// Reset baud rates
-	PCD_WriteRegister(mfrc, TxModeReg, 0x00);
-	PCD_WriteRegister(mfrc, RxModeReg, 0x00);
+	PCD_WriteRegisterSingleByte(mfrc, TxModeReg, 0x00);
+	PCD_WriteRegisterSingleByte(mfrc, RxModeReg, 0x00);
 	// Reset ModWidthReg
-	PCD_WriteRegister(mfrc, ModWidthReg, 0x26);
+	PCD_WriteRegisterSingleByte(mfrc, ModWidthReg, 0x26);
 
 	// When communicating with a PICC we need a timeout if something goes wrong.
 	// f_timer = 13.56 MHz / (2*TPreScaler+1) where TPreScaler = [TPrescaler_Hi:TPrescaler_Lo].
 	// TPrescaler_Hi are the four low bits in TModeReg. TPrescaler_Lo is TPrescalerReg.
-	PCD_WriteRegister(mfrc, TModeReg, 0x80);			// TAuto=1; timer starts automatically at the end of the transmission in all communication modes at all speeds
-	PCD_WriteRegister(mfrc, TPrescalerReg, 0xA9);		// TPreScaler = TModeReg[3..0]:TPrescalerReg, ie 0x0A9 = 169 => f_timer=40kHz, ie a timer period of 25μs.
-	PCD_WriteRegister(mfrc, TReloadRegH, 0x03);		// Reload timer with 0x3E8 = 1000, ie 25ms before timeout.
-	PCD_WriteRegister(mfrc, TReloadRegL, 0xE8);
+	PCD_WriteRegisterSingleByte(mfrc, TModeReg, 0x80);			// TAuto=1; timer starts automatically at the end of the transmission in all communication modes at all speeds
+	PCD_WriteRegisterSingleByte(mfrc, TPrescalerReg, 0xA9);		// TPreScaler = TModeReg[3..0]:TPrescalerReg, ie 0x0A9 = 169 => f_timer=40kHz, ie a timer period of 25μs.
+	PCD_WriteRegisterSingleByte(mfrc, TReloadRegH, 0x03);		// Reload timer with 0x3E8 = 1000, ie 25ms before timeout.
+	PCD_WriteRegisterSingleByte(mfrc, TReloadRegL, 0xE8);
 	
-	PCD_WriteRegister(mfrc, TxASKReg, 0x40);		// Default 0x00. Force a 100 % ASK modulation independent of the ModGsPReg register setting
-	PCD_WriteRegister(mfrc, ModeReg, 0x3D);		// Default 0x3F. Set the preset value for the CRC coprocessor for the CalcCRC command to 0x6363 (ISO 14443-3 part 6.2.4)
+	PCD_WriteRegisterSingleByte(mfrc, TxASKReg, 0x40);		// Default 0x00. Force a 100 % ASK modulation independent of the ModGsPReg register setting
+	PCD_WriteRegisterSingleByte(mfrc, ModeReg, 0x3D);		// Default 0x3F. Set the preset value for the CRC coprocessor for the CalcCRC command to 0x6363 (ISO 14443-3 part 6.2.4)
 	PCD_AntennaOn(mfrc);
 }
 
@@ -74,7 +74,7 @@ void MFRC522_init(const MFRC522_cfg_t* cfg, MFRC522_t* mfrc) {
  * Writes a uint8_t to the specified register in the MFRC522 chip.
  * The interface is described in the datasheet section 8.1.2.
  */
-void PCD_WriteRegister(
+void PCD_WriteRegisterSingleByte(
 	MFRC522_t* mfrc,
 	PCD_Register reg,	///< The register to write to. One of the PCD_Register enums.
 	uint8_t value			///< The value to write.
@@ -111,7 +111,7 @@ void PCD_WriteRegister(
  * Reads a uint8_t from the specified register in the MFRC522 chip.
  * The interface is described in the datasheet section 8.1.2.
  */
-uint8_t PCD_ReadRegister(
+uint8_t PCD_ReadRegisterSingleByte(
 	MFRC522_t* mfrc, 	
 	PCD_Register reg	///< The register to read from. One of the PCD_Register enums.
 ) {
@@ -173,8 +173,8 @@ void PCD_SetRegisterBitMask(
 	uint8_t mask			///< The bits to set.
 ) { 
 	uint8_t tmp;
-	tmp = PCD_ReadRegister(mfrc, reg);
-	PCD_WriteRegister(mfrc, reg, tmp | mask);			// set bit mask
+	tmp = PCD_ReadRegisterSingleByte(mfrc, reg);
+	PCD_WriteRegisterSingleByte(mfrc, reg, tmp | mask);			// set bit mask
 } // End PCD_SetRegisterBitMask()
 
 /**
@@ -186,8 +186,8 @@ void PCD_ClearRegisterBitMask(
 	uint8_t mask			///< The bits to clear.
 ) {
 	uint8_t tmp;
-	tmp = PCD_ReadRegister(mfrc, reg);
-	PCD_WriteRegister(mfrc, reg, tmp & (~mask));		// clear bit mask
+	tmp = PCD_ReadRegisterSingleByte(mfrc, reg);
+	PCD_WriteRegisterSingleByte(mfrc, reg, tmp & (~mask));		// clear bit mask
 } // End PCD_ClearRegisterBitMask()
 
 
@@ -202,11 +202,11 @@ StatusCode PCD_CalculateCRC(
 	uint8_t length,	///< In: The number of bytes to transfer.
 	uint8_t *result	///< Out: Pointer to result buffer. Result is written to result[0..1], low uint8_t first.
 ) {
-	PCD_WriteRegister(mfrc, CommandReg, PCD_Idle);		// Stop any active command.
-	PCD_WriteRegister(mfrc, DivIrqReg, 0x04);				// Clear the CRCIRq interrupt request bit
-	PCD_WriteRegister(mfrc, FIFOLevelReg, 0x80);			// FlushBuffer = 1, FIFO initialization
+	PCD_WriteRegisterSingleByte(mfrc, CommandReg, PCD_Idle);		// Stop any active command.
+	PCD_WriteRegisterSingleByte(mfrc, DivIrqReg, 0x04);				// Clear the CRCIRq interrupt request bit
+	PCD_WriteRegisterSingleByte(mfrc, FIFOLevelReg, 0x80);			// FlushBuffer = 1, FIFO initialization
 	PCD_WriteRegister(mfrc, FIFODataReg, length, data);	// Write data to the FIFO
-	PCD_WriteRegister(mfrc, CommandReg, PCD_CalcCRC);		// Start the calculation
+	PCD_WriteRegisterSingleByte(mfrc, CommandReg, PCD_CalcCRC);		// Start the calculation
 	
 	// Wait for the CRC calculation to complete. Check for the register to
 	// indicate that the CRC calculation is complete in a loop. If the
@@ -216,12 +216,12 @@ StatusCode PCD_CalculateCRC(
 
 	do {
 		// DivIrqReg[7..0] bits are: Set2 reserved reserved MfinActIRq reserved CRCIRq reserved reserved
-		uint8_t n = PCD_ReadRegister(mfrc, DivIrqReg);
+		uint8_t n = PCD_ReadRegisterSingleByte(mfrc, DivIrqReg);
 		if (n & 0x04) {									// CRCIRq bit set - calculation done
-			PCD_WriteRegister(mfrc, CommandReg, PCD_Idle);	// Stop calculating CRC for new content in the FIFO.
+			PCD_WriteRegisterSingleByte(mfrc, CommandReg, PCD_Idle);	// Stop calculating CRC for new content in the FIFO.
 			// Transfer the result from the registers to the result buffer
-			result[0] = PCD_ReadRegister(mfrc, CRCResultRegL);
-			result[1] = PCD_ReadRegister(mfrc, CRCResultRegH);
+			result[0] = PCD_ReadRegisterSingleByte(mfrc, CRCResultRegL);
+			result[1] = PCD_ReadRegisterSingleByte(mfrc, CRCResultRegH);
 			return STATUS_OK;
 		}
 		yield();
@@ -241,7 +241,7 @@ StatusCode PCD_CalculateCRC(
  * Performs a soft reset on the MFRC522 chip and waits for it to be ready again.
  */
 void PCD_Reset(MFRC522_t* mfrc) {
-	PCD_WriteRegister(mfrc, CommandReg, PCD_SoftReset);	// Issue the SoftReset command.
+	PCD_WriteRegisterSingleByte(mfrc, CommandReg, PCD_SoftReset);	// Issue the SoftReset command.
 	// The datasheet does not mention how long the SoftRest command takes to complete.
 	// But the MFRC522 might have been in soft power-down mode (triggered by bit 4 of CommandReg) 
 	// Section 8.8.2 in the datasheet says the oscillator start-up time is the start up time of the crystal + 37,74μs. Let us be generous: 50ms.
@@ -249,7 +249,7 @@ void PCD_Reset(MFRC522_t* mfrc) {
 	do {
 		// Wait for the PowerDown bit in CommandReg to be cleared (max 3x50ms)
 		delay(50);
-	} while ((PCD_ReadRegister(mfrc, CommandReg) & (1 << 4)) && (++count) < 3);
+	} while ((PCD_ReadRegisterSingleByte(mfrc, CommandReg) & (1 << 4)) && (++count) < 3);
 } // End PCD_Reset()
 
 /**
@@ -257,9 +257,9 @@ void PCD_Reset(MFRC522_t* mfrc) {
  * After a reset these pins are disabled.
  */
 void PCD_AntennaOn(MFRC522_t* mfrc) {
-	uint8_t value = PCD_ReadRegister(mfrc, TxControlReg);
+	uint8_t value = PCD_ReadRegisterSingleByte(mfrc, TxControlReg);
 	if ((value & 0x03) != 0x03) {
-		PCD_WriteRegister(mfrc, TxControlReg, value | 0x03);
+		PCD_WriteRegisterSingleByte(mfrc, TxControlReg, value | 0x03);
 	}
 } // End PCD_AntennaOn()
 
@@ -278,7 +278,7 @@ void PCD_AntennaOff(MFRC522_t* mfrc) {
  * @return Value of the RxGain, scrubbed to the 3 bits used.
  */
 uint8_t PCD_GetAntennaGain(MFRC522_t* mfrc) {
-	return PCD_ReadRegister(mfrc, RFCfgReg) & (0x07<<4);
+	return PCD_ReadRegisterSingleByte(mfrc, RFCfgReg) & (0x07<<4);
 } // End PCD_GetAntennaGain()
 
 /**
@@ -306,18 +306,18 @@ bool PCD_PerformSelfTest(MFRC522_t* mfrc) {
 	
 	// 2. Clear the internal buffer by writing 25 bytes of 00h
 	uint8_t ZEROES[25] = {0x00};
-	PCD_WriteRegister(mfrc, FIFOLevelReg, 0x80);		// flush the FIFO buffer
+	PCD_WriteRegisterSingleByte(mfrc, FIFOLevelReg, 0x80);		// flush the FIFO buffer
 	PCD_WriteRegister(mfrc, FIFODataReg, 25, ZEROES);	// write 25 bytes of 00h to FIFO
-	PCD_WriteRegister(mfrc, CommandReg, PCD_Mem);		// transfer to internal buffer
+	PCD_WriteRegisterSingleByte(mfrc, CommandReg, PCD_Mem);		// transfer to internal buffer
 	
 	// 3. Enable self-test
-	PCD_WriteRegister(mfrc, AutoTestReg, 0x09);
+	PCD_WriteRegisterSingleByte(mfrc, AutoTestReg, 0x09);
 	
 	// 4. Write 00h to FIFO buffer
-	PCD_WriteRegister(mfrc, FIFODataReg, 0x00);
+	PCD_WriteRegisterSingleByte(mfrc, FIFODataReg, 0x00);
 	
 	// 5. Start self-test by issuing the CalcCRC command
-	PCD_WriteRegister(mfrc, CommandReg, PCD_CalcCRC);
+	PCD_WriteRegisterSingleByte(mfrc, CommandReg, PCD_CalcCRC);
 	
 	// 6. Wait for self-test to complete
 	uint8_t n;
@@ -329,12 +329,12 @@ bool PCD_PerformSelfTest(MFRC522_t* mfrc) {
 		// so one can't reliably use DivIrqReg to check for completion.
 		// It is reported that some devices does not trigger CRCIRq flag
 		// during selftest.
-		n = PCD_ReadRegister(mfrc, FIFOLevelReg);
+		n = PCD_ReadRegisterSingleByte(mfrc, FIFOLevelReg);
 		if (n >= 64) {
 			break;
 		}
 	}
-	PCD_WriteRegister(mfrc, CommandReg, PCD_Idle);		// Stop calculating CRC for new content in the FIFO.
+	PCD_WriteRegisterSingleByte(mfrc, CommandReg, PCD_Idle);		// Stop calculating CRC for new content in the FIFO.
 	
 	// 7. Read out resulting 64 bytes from the FIFO buffer.
 	uint8_t result[64];
@@ -342,10 +342,10 @@ bool PCD_PerformSelfTest(MFRC522_t* mfrc) {
 	
 	// Auto self-test done
 	// Reset AutoTestReg register to be 0 again. Required for normal operation.
-	PCD_WriteRegister(mfrc, AutoTestReg, 0x00);
+	PCD_WriteRegisterSingleByte(mfrc, AutoTestReg, 0x00);
 	
 	// Determine firmware version (see section 9.3.4.8 in spec)
-	uint8_t version = PCD_ReadRegister(mfrc, VersionReg);
+	uint8_t version = PCD_ReadRegisterSingleByte(mfrc, VersionReg);
 	
 	// Pick the appropriate reference values
 	const uint8_t *reference;
@@ -392,20 +392,20 @@ bool PCD_PerformSelfTest(MFRC522_t* mfrc) {
 
 void PCD_SoftPowerDown(MFRC522_t* mfrc){
 	//Note : Only soft power down mode is available throught software
-	uint8_t val = PCD_ReadRegister(mfrc, CommandReg); // Read state of the command register 
+	uint8_t val = PCD_ReadRegisterSingleByte(mfrc, CommandReg); // Read state of the command register 
 	val |= (1<<4);// set PowerDown bit ( bit 4 ) to 1 
-	PCD_WriteRegister(mfrc, CommandReg, val);//write new value to the command register
+	PCD_WriteRegisterSingleByte(mfrc, CommandReg, val);//write new value to the command register
 }
 
 void PCD_SoftPowerUp(MFRC522_t* mfrc){
-	uint8_t val = PCD_ReadRegister(mfrc, CommandReg); // Read state of the command register 
+	uint8_t val = PCD_ReadRegisterSingleByte(mfrc, CommandReg); // Read state of the command register 
 	val &= ~(1<<4);// set PowerDown bit ( bit 4 ) to 0 
-	PCD_WriteRegister(mfrc, CommandReg, val);//write new value to the command register
+	PCD_WriteRegisterSingleByte(mfrc, CommandReg, val);//write new value to the command register
 	// wait until PowerDown bit is cleared (this indicates end of wake up procedure) 
 	const uint32_t timeout = (uint32_t)millis() + 500;// create timer for timeout (just in case) 
 	
 	while(millis()<=timeout){ // set timeout to 500 ms 
-		val = PCD_ReadRegister(mfrc, CommandReg);// Read state of the command register
+		val = PCD_ReadRegisterSingleByte(mfrc, CommandReg);// Read state of the command register
 		i!(val & (1<<4)){ // if powerdown bit is 0 
 			break;// wake up procedure is finished 
 		}
@@ -470,12 +470,12 @@ StatusCode PCD_CommunicateWithPICC(
 	uint8_t txLastBits = validBits ? *validBits : 0;
 	uint8_t bitFraming = (rxAlign << 4) + txLastBits;		// RxAlign = BitFramingReg[6..4]. TxLastBits = BitFramingReg[2..0]
 	
-	PCD_WriteRegister(mfrc, CommandReg, PCD_Idle);			// Stop any active command.
-	PCD_WriteRegister(mfrc, ComIrqReg, 0x7F);					// Clear all seven interrupt request bits
-	PCD_WriteRegister(mfrc, FIFOLevelReg, 0x80);				// FlushBuffer = 1, FIFO initialization
+	PCD_WriteRegisterSingleByte(mfrc, CommandReg, PCD_Idle);			// Stop any active command.
+	PCD_WriteRegisterSingleByte(mfrc, ComIrqReg, 0x7F);					// Clear all seven interrupt request bits
+	PCD_WriteRegisterSingleByte(mfrc, FIFOLevelReg, 0x80);				// FlushBuffer = 1, FIFO initialization
 	PCD_WriteRegister(mfrc, FIFODataReg, sendLen, sendData);	// Write sendData to the FIFO
-	PCD_WriteRegister(mfrc, BitFramingReg, bitFraming);		// Bit adjustments
-	PCD_WriteRegister(mfrc, CommandReg, command);				// Execute the command
+	PCD_WriteRegisterSingleByte(mfrc, BitFramingReg, bitFraming);		// Bit adjustments
+	PCD_WriteRegisterSingleByte(mfrc, CommandReg, command);				// Execute the command
 	if (command == PCD_Transceive) {
 		PCD_SetRegisterBitMask(mfrc, BitFramingReg, 0x80);	// StartSend=1, transmission of data starts
 	}
@@ -492,7 +492,7 @@ StatusCode PCD_CommunicateWithPICC(
 	bool completed = false;
 
 	do {
-		uint8_t n = PCD_ReadRegister(mfrc, ComIrqReg);	// ComIrqReg[7..0] bits are: Set1 TxIRq RxIRq IdleIRq HiAlertIRq LoAlertIRq ErrIRq TimerIRq
+		uint8_t n = PCD_ReadRegisterSingleByte(mfrc, ComIrqReg);	// ComIrqReg[7..0] bits are: Set1 TxIRq RxIRq IdleIRq HiAlertIRq LoAlertIRq ErrIRq TimerIRq
 		if (n & waitIRq) {					// One of the interrupts that signal success has been set.
 			completed = true;
 			break;
@@ -510,7 +510,7 @@ StatusCode PCD_CommunicateWithPICC(
 	}
 	
 	// Stop now if any errors except collisions were detected.
-	uint8_t errorRegValue = PCD_ReadRegister(mfrc, ErrorReg); // ErrorReg[7..0] bits are: WrErr TempErr reserved BufferOvfl CollErr CRCErr ParityErr ProtocolErr
+	uint8_t errorRegValue = PCD_ReadRegisterSingleByte(mfrc, ErrorReg); // ErrorReg[7..0] bits are: WrErr TempErr reserved BufferOvfl CollErr CRCErr ParityErr ProtocolErr
 	if (errorRegValue & 0x13) {	 // BufferOvfl ParityErr ProtocolErr
 		return STATUS_ERROR;
 	}
@@ -519,13 +519,13 @@ StatusCode PCD_CommunicateWithPICC(
 	
 	// If the caller wants data back, get it from the MFRC522.
 	if (backData && backLen) {
-		uint8_t n = PCD_ReadRegister(mfrc, FIFOLevelReg);	// Number of bytes in the FIFO
+		uint8_t n = PCD_ReadRegisterSingleByte(mfrc, FIFOLevelReg);	// Number of bytes in the FIFO
 		if (n > *backLen) {
 			return STATUS_NO_ROOM;
 		}
 		*backLen = n;											// Number of bytes returned
 		PCD_ReadRegister(mfrc, FIFODataReg, n, backData, rxAlign);	// Get received data from FIFO
-		_validBits = PCD_ReadRegister(mfrc, ControlReg) & 0x07;		// RxLastBits[2:0] indicates the number of valid bits in the last received byte. If this value is 000b, the whole uint8_t is valid.
+		_validBits = PCD_ReadRegisterSingleByte(mfrc, ControlReg) & 0x07;		// RxLastBits[2:0] indicates the number of valid bits in the last received byte. If this value is 000b, the whole uint8_t is valid.
 		if (validBits) {
 			*validBits = _validBits;
 		}
@@ -784,7 +784,7 @@ StatusCode PICC_Select(
 			
 			// Set bit adjustments
 			rxAlign = txLastBits;											// Having a separate variable is overkill. But it makes the next line easier to read.
-			PCD_WriteRegister(mfrc, BitFramingReg, (rxAlign << 4) + txLastBits);	// RxAlign = BitFramingReg[6..4]. TxLastBits = BitFramingReg[2..0]
+			PCD_WriteRegisterSingleByte(mfrc, BitFramingReg, (rxAlign << 4) + txLastBits);	// RxAlign = BitFramingReg[6..4]. TxLastBits = BitFramingReg[2..0]
 			
 			// Transmit the buffer and receive the response.
 			result = PCD_TransceiveData(
@@ -799,7 +799,7 @@ StatusCode PICC_Select(
 			);
 			
 			if (result == STATUS_COLLISION) { // More than one PICC in the field => collision.
-				uint8_t valueOfCollReg = PCD_ReadRegister(mfrc, CollReg); // CollReg[7..0] bits are: ValuesAfterColl reserved CollPosNotValid CollPos[4:0]
+				uint8_t valueOfCollReg = PCD_ReadRegisterSingleByte(mfrc, CollReg); // CollReg[7..0] bits are: ValuesAfterColl reserved CollPosNotValid CollPos[4:0]
 				if (valueOfCollReg & 0x20) { // CollPosNotValid
 					return STATUS_COLLISION; // Without a valid collision position we cannot continue
 				}
@@ -1467,7 +1467,7 @@ const char* PICC_GetTypeName(PICC_Type type	///< One of the PICC_Type enums.
  */
 void PCD_DumpVersionToSerial(MFRC522_t* mfrc) {
 	// Get the MFRC522 firmware version
-	uint8_t v = PCD_ReadRegister(mfrc, VersionReg);
+	uint8_t v = PCD_ReadRegisterSingleByte(mfrc, VersionReg);
 	Serial.print("Firmware Version: 0x");
 	Serial.print(v, HEX);
 	// Lookup which version
@@ -2035,10 +2035,10 @@ bool PICC_IsNewCardPresent(MFRC522_t* mfrc) {
 	uint8_t bufferSize = sizeof(bufferATQA;
 
 	// Reset baud rates
-	PCD_WriteRegister(mfrc, TxModeReg, 0x00);
-	PCD_WriteRegister(mfrc, RxModeReg, 0x00);
+	PCD_WriteRegisterSingleByte(mfrc, TxModeReg, 0x00);
+	PCD_WriteRegisterSingleByte(mfrc, RxModeReg, 0x00);
 	// Reset ModWidthReg
-	PCD_WriteRegister(mfrc, ModWidthReg, 0x26);
+	PCD_WriteRegisterSingleByte(mfrc, ModWidthReg, 0x26);
 
 	StatusCode result = PICC_RequestA(mfrc, bufferATQA, &bufferSize);
 	return (result == STATUS_OK || result == STATUS_COLLISION);

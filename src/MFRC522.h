@@ -315,9 +315,9 @@ void MFRC522_init(const MFRC522_cfg_t* cfg, MFRC522_t* mfrc);
 /////////////////////////////////////////////////////////////////////////////////////
 // Basic interface functions for communicating with the MFRC522
 /////////////////////////////////////////////////////////////////////////////////////
-void PCD_WriteRegister(MFRC522_t* mfrc, PCD_Register reg, uint8_t value);
+void PCD_WriteRegisterSingleByte(MFRC522_t* mfrc, PCD_Register reg, uint8_t value);
 void PCD_WriteRegister(MFRC522_t* mfrc, PCD_Register reg, uint8_t count, uint8_t *values);
-uint8_t PCD_ReadRegister(MFRC522_t* mfrc, PCD_Register reg);
+uint8_t PCD_ReadRegisterSingleByte(MFRC522_t* mfrc, PCD_Register reg);
 void PCD_ReadRegister(MFRC522_t* mfrc, PCD_Register reg, uint8_t count, uint8_t *values, uint8_t rxAlign /*  = 0 */);
 void PCD_SetRegisterBitMask(MFRC522_t* mfrc, PCD_Register reg, uint8_t mask);
 void PCD_ClearRegisterBitMask(MFRC522_t* mfrc, PCD_Register reg, uint8_t mask);
