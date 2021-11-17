@@ -912,7 +912,7 @@ StatusCode PICC_HaltA(MFRC522_t* mfrc) {
 	result = PCD_TransceiveData(
 		mfrc, 
 		buffer, 
-		sizeof(buffer, 
+		sizeof(buffer), 
 		NULL, 
 		NULL, 
 		NULL, 
@@ -1238,7 +1238,10 @@ StatusCode MIFARE_GetValue(
 	status = MIFARE_Read(mfrc, blockAddr, buffer, &size);
 	if (status == STATUS_OK) {
 		// Extract the value
-		*value = (int32_t(buffer[3])<<24) | (int32_t(buffer[2])<<16) | (int32_t(buffer[1])<<8) | int32_t(buffer[0]);
+		*value = ((int32_t)(buffer[3])<<24) | 
+				 ((int32_t)(buffer[2])<<16) | 
+				 ((int32_t)(buffer[1])<<8) | 
+				 (int32_t)(buffer[0]);
 	}
 	return status;
 } // End MIFARE_GetValue()
@@ -1298,7 +1301,7 @@ StatusCode PCD_NTAG216_AUTH(
 	//       (Better still, rxlength should not even be necessary.)
 
 	StatusCode result;
-	byte				cmdBuffer[18]; // We need room for 16 bytes data and 2 bytes CRC_A.
+	uint8_t cmdBuffer[18]; // We need room for 16 bytes data and 2 bytes CRC_A.
 	
 	cmdBuffer[0] = 0x1B; //Comando de autentificacion
 	
@@ -1560,7 +1563,7 @@ void PICC_DumpDetailsToSerial(
 	// UID
 	Serial.print("Card UID:");
 	for (uint8_t i = 0; i < uid->size; i++) {
-		iuid->uidByte[i] < 0x10
+		if(uid->uidByte[i] < 0x10)
 			Serial.print(" 0");
 		else
 			Serial.print(" ");
@@ -1570,7 +1573,7 @@ void PICC_DumpDetailsToSerial(
 	
 	// SAK
 	Serial.print("Card SAK: ");
-	iuid->sak < 0x10
+	if(uid->sak < 0x10)
 		Serial.print("0");
 	Serial.println(uid->sak, HEX);
 	
@@ -1676,7 +1679,7 @@ void PICC_DumpMifareClassicSectorToSerial(
 		blockAddr = firstBlock + blockOffset;
 		// Sector number - only on first line
 		if (isSectorTrailer) {
-			isector < 10
+			if(sector < 10)
 				Serial.print("   "); // Pad with spaces
 			else
 				Serial.print("  "); // Pad with spaces
@@ -1687,10 +1690,10 @@ void PICC_DumpMifareClassicSectorToSerial(
 			Serial.print("       ");
 		}
 		// Block number
-		iblockAddr < 10
+		if(blockAddr < 10)
 			Serial.print("   "); // Pad with spaces
 		else {
-			iblockAddr < 100
+			if(blockAddr < 100)
 				Serial.print("  "); // Pad with spaces
 			else
 				Serial.print(" "); // Pad with spaces
@@ -1716,7 +1719,7 @@ void PICC_DumpMifareClassicSectorToSerial(
 		}
 		// Dump data
 		for (uint8_t index = 0; index < 16; index++) {
-			ibuffer[index] < 0x10
+			if(buffer[index] < 0x10)
 				Serial.print(" 0");
 			else
 				Serial.print(" ");
@@ -1764,9 +1767,12 @@ void PICC_DumpMifareClassicSectorToSerial(
 		}
 		
 		if (group != 3 && (g[group] == 1 || g[group] == 6)) { // Not a sector trailer, a value block
-			int32_t value = (int32_t(buffer[3])<<24) | (int32_t(buffer[2])<<16) | (int32_t(buffer[1])<<8) | int32_t(buffer[0]);
-			Serial.print(" Value=0x")); Serial.print(value, HEX;
-			Serial.print(" Adr=0x")); Serial.print(buffer[12], HEX;
+			int32_t value = ((int32_t)(buffer[3])<<24) | 
+							((int32_t)(buffer[2])<<16) | 
+							((int32_t)(buffer[1])<<8) | 
+							(int32_t)(buffer[0]);
+			Serial.print(" Value=0x"); Serial.print(value, HEX);
+			Serial.print(" Adr=0x"); Serial.print(buffer[12], HEX);
 		}
 		Serial.println();
 	}
@@ -1797,7 +1803,7 @@ void PICC_DumpMifareUltralightToSerial(MFRC522_t* mfrc) {
 		// Dump data
 		for (uint8_t offset = 0; offset < 4; offset++) {
 			i = page + offset;
-			ii < 10
+			if(i < 10)
 				Serial.print("  "); // Pad with spaces
 			else
 				Serial.print(" "); // Pad with spaces
@@ -1805,7 +1811,7 @@ void PICC_DumpMifareUltralightToSerial(MFRC522_t* mfrc) {
 			Serial.print("  ");
 			for (uint8_t index = 0; index < 4; index++) {
 				i = 4 * offset + index;
-				ibuffer[i] < 0x10
+				if(buffer[i] < 0x10)
 					Serial.print(" 0");
 				else
 					Serial.print(" ");
