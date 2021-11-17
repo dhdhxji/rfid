@@ -13,6 +13,17 @@
 	mfrc->cfg->gpio_cfg.get_level((io), mfrc->cfg->gpio_cfg.ctx)
 
 
+#define SPI_EXCHANGE(mfrc, send, rcv, len) \
+	mfrc->cfg->spi_cfg.exchange(\
+		send,\
+		rcv,\
+		len,\
+		mfrc->cfg->spi_cfg.ctx\
+	)
+
+#define SPI_SEND(mfrc, send, len) SPI_EXCHANGE(mfrc, send, NULL, len)
+
+
 
 /////////////////////////////////////////////////////////////////////////////////////
 // Functions for setting up the Arduino
@@ -79,12 +90,12 @@ void PCD_WriteRegisterSingleByte(
 	PCD_Register reg,	///< The register to write to. One of the PCD_Register enums.
 	uint8_t value			///< The value to write.
 ) {
-	SPI.beginTransaction(SPISettings(MFRC522_SPICLOCK, MSBFIRST, SPI_MODE0));	// Set the settings to work with SPI bus
 	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, LOW);		// Select slave
-	SPI.transfer(reg);						// MSB == 0 is for writing. LSB is not used in address. Datasheet section 8.1.2.3.
-	SPI.transfer(value);
+	
+	SPI_SEND(mfrc, &reg, 1);
+	SPI_SEND(mfrc, &value, 1);
+
 	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, HIGH);		// Release slave again
-	SPI.endTransaction(); // Stop using the SPI bus
 } // End PCD_WriteRegister()
 
 /**
@@ -97,14 +108,12 @@ void PCD_WriteRegister(
 	uint8_t count,			///< The number of bytes to write to the register
 	uint8_t* values		///< The values to write. uint8_t array.
 ) {
-	SPI.beginTransaction(SPISettings(MFRC522_SPICLOCK, MSBFIRST, SPI_MODE0));	// Set the settings to work with SPI bus
 	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, LOW);		// Select slave
-	SPI.transfer(reg);						// MSB == 0 is for writing. LSB is not used in address. Datasheet section 8.1.2.3.
+	SPI_SEND(mfrc, &reg, 1); // MSB == 0 is for writing. LSB is not used in address. Datasheet section 8.1.2.3.
 	for (uint8_t index = 0; index < count; index++) {
-		SPI.transfer(values[index]);
+		SPI_SEND(mfrc, &values[index], 1);
 	}
 	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, HIGH);		// Release slave again
-	SPI.endTransaction(); // Stop using the SPI bus
 } // End PCD_WriteRegister()
 
 /**
@@ -115,13 +124,18 @@ uint8_t PCD_ReadRegisterSingleByte(
 	MFRC522_t* mfrc, 	
 	PCD_Register reg	///< The register to read from. One of the PCD_Register enums.
 ) {
-	uint8_t value;
-	SPI.beginTransaction(SPISettings(MFRC522_SPICLOCK, MSBFIRST, SPI_MODE0));	// Set the settings to work with SPI bus
+	/* uint8_t value;
 	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, LOW);			// Select slave
-	SPI.transfer(0x80 | reg);					// MSB == 1 is for reading. LSB is not used in address. Datasheet section 8.1.2.3.
-	value = SPI.transfer(0);					// Read the value back. Send 0 to stop reading.
-	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, HIGH);			// Release slave again
-	SPI.endTransaction(); // Stop using the SPI bus
+	
+	uint8_t addr = 0x80 | reg;
+	SPI_SEND(mfrc, &addr, 1); // MSB == 1 is for reading. LSB is not used in address. Datasheet section 8.1.2.3.
+	uint8_t data = 0;
+	SPI_EXCHANGE(mfrc, &data, &value, 1); // Read the value back. Send 0 to stop reading.
+	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, HIGH); */			// Release slave again
+
+	uint8_t value;
+	PCD_ReadRegister(mfrc, reg, 1, &value, 0);
+
 	return value;
 } // End PCD_ReadRegister()
 
@@ -142,26 +156,29 @@ void PCD_ReadRegister(
 	//Serial.print("Reading ")); 	Serial.print(count); Serial.println(F(" bytes from register.");
 	uint8_t address = 0x80 | reg;				// MSB == 1 is for reading. LSB is not used in address. Datasheet section 8.1.2.3.
 	uint8_t index = 0;							// Index in values array.
-	SPI.beginTransaction(SPISettings(MFRC522_SPICLOCK, MSBFIRST, SPI_MODE0));	// Set the settings to work with SPI bus
+	
 	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, LOW);		// Select slave
 	count--;								// One read is performed outside of the loop
-	SPI.transfer(address);					// Tell MFRC522 which address we want to read
+	
+	SPI_SEND(mfrc, &address, 1); // Tell MFRC522 which address we want to read
 	if (rxAlign) {		// Only update bit positions rxAlign..7 in values[0]
 		// Create bit mask for bit positions rxAlign..7
 		uint8_t mask = (0xFF << rxAlign) & 0xFF;
 		// Read value and tell that we want to read the same address again.
-		uint8_t value = SPI.transfer(address);
+		uint8_t value;
+		SPI_EXCHANGE(mfrc, &address, &value, 1);
 		// Apply mask to both current value of values[0] and the new data in value.
 		values[0] = (values[0] & ~mask) | (value & mask);
 		index++;
 	}
 	while (index < count) {
-		values[index] = SPI.transfer(address);	// Read value and tell that we want to read the same address again.
+		SPI_EXCHANGE(mfrc, &address, &values[index], 1); // Read value and tell that we want to read the same address again.
 		index++;
 	}
-	values[index] = SPI.transfer(0);			// Read the final byte. Send 0 to stop reading.
+
+	uint8_t zero = 0;
+	SPI_EXCHANGE(mfrc, &zero, &values[index], 1); // Read the final byte. Send 0 to stop reading.
 	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, HIGH);			// Release slave again
-	SPI.endTransaction(); // Stop using the SPI bus
 } // End PCD_ReadRegister()
 
 /**
@@ -406,7 +423,7 @@ void PCD_SoftPowerUp(MFRC522_t* mfrc){
 	
 	while(millis()<=timeout){ // set timeout to 500 ms 
 		val = PCD_ReadRegisterSingleByte(mfrc, CommandReg);// Read state of the command register
-		i!(val & (1<<4)){ // if powerdown bit is 0 
+		if(val & (1<<4)){ // if powerdown bit is 0 
 			break;// wake up procedure is finished 
 		}
 		yield();
@@ -427,9 +444,9 @@ StatusCode PCD_TransceiveData(
 	MFRC522_t* mfrc, 	
 	uint8_t *sendData,		///< Pointer to the data to transfer to the FIFO.
 	uint8_t sendLen,		///< Number of bytes to transfer to the FIFO.
-	uint8_t *backData,		///< nullptr or pointer to buffer if data should be read back after executing the command.
+	uint8_t *backData,		///< NULL or pointer to buffer if data should be read back after executing the command.
 	uint8_t *backLen,		///< In: Max number of bytes to write to *backData. Out: The number of bytes returned.
-	uint8_t *validBits,	///< In/Out: The number of valid bits in the last byte. 0 for 8 valid bits. Default nullptr.
+	uint8_t *validBits,	///< In/Out: The number of valid bits in the last byte. 0 for 8 valid bits. Default NULL.
 	uint8_t rxAlign,		///< In: Defines the bit position in backData[0] for the first bit received. Default 0.
 	bool checkCRC		///< In: True => The last two bytes of the response is assumed to be a CRC_A that must be validated.
 ) {
@@ -460,7 +477,7 @@ StatusCode PCD_CommunicateWithPICC(
 	uint8_t waitIRq,		///< The bits in the ComIrqReg register that signals successful completion of the command.
 	uint8_t *sendData,		///< Pointer to the data to transfer to the FIFO.
 	uint8_t sendLen,		///< Number of bytes to transfer to the FIFO.
-	uint8_t *backData,		///< nullptr or pointer to buffer if data should be read back after executing the command.
+	uint8_t *backData,		///< NULL or pointer to buffer if data should be read back after executing the command.
 	uint8_t *backLen,		///< In: Max number of bytes to write to *backData. Out: The number of bytes returned.
 	uint8_t *validBits,	///< In/Out: The number of valid bits in the last byte. 0 for 8 valid bits.
 	uint8_t rxAlign,		///< In: Defines the bit position in backData[0] for the first bit received. Default 0.
@@ -603,7 +620,7 @@ StatusCode PICC_REQA_or_WUPA(
 	uint8_t validBits;
 	StatusCode status;
 	
-	if (bufferATQA == nullptr || *bufferSize < 2) {	// The ATQA response is 2 bytes long.
+	if (bufferATQA == NULL || *bufferSize < 2) {	// The ATQA response is 2 bytes long.
 		return STATUS_NO_ROOM;
 	}
 	PCD_ClearRegisterBitMask(mfrc, CollReg, 0x80);		// ValuesAfterColl=1 => Bits received after collision are cleared.
@@ -779,7 +796,7 @@ StatusCode PICC_Select(
 				bufferUsed		= index + (txLastBits ? 1 : 0);
 				// Store response in the unused part of buffer
 				responseBuffer	= &buffer[index];
-				responseLength	= sizeof(buffer - index;
+				responseLength	= sizeof(buffer) - index;
 			}
 			
 			// Set bit adjustments
@@ -896,9 +913,9 @@ StatusCode PICC_HaltA(MFRC522_t* mfrc) {
 		mfrc, 
 		buffer, 
 		sizeof(buffer, 
-		nullptr, 
-		nullptr, 
-		nullptr, 
+		NULL, 
+		NULL, 
+		NULL, 
 		0,
 		false
 	);
@@ -959,9 +976,9 @@ StatusCode PCD_Authenticate(
 		waitIRq, 
 		&sendData[0], 
 		sizeof(sendData),
-		nullptr,
-		nullptr,
-		nullptr,
+		NULL,
+		NULL,
+		NULL,
 		0,
 		false
 	);
@@ -1001,7 +1018,7 @@ StatusCode MIFARE_Read(
 	StatusCode result;
 	
 	// Sanity check
-	if (buffer == nullptr || *bufferSize < 18) {
+	if (buffer == NULL || *bufferSize < 18) {
 		return STATUS_NO_ROOM;
 	}
 	
@@ -1015,7 +1032,7 @@ StatusCode MIFARE_Read(
 	}
 	
 	// Transmit the buffer and receive the response, validate CRC_A.
-	return PCD_TransceiveData(mfrc, buffer, 4, buffer, bufferSize, nullptr, 0, true);
+	return PCD_TransceiveData(mfrc, buffer, 4, buffer, bufferSize, NULL, 0, true);
 } // End MIFARE_Read()
 
 /**
@@ -1038,7 +1055,7 @@ StatusCode MIFARE_Write(
 	StatusCode result;
 	
 	// Sanity check
-	if (buffer == nullptr || bufferSize < 16) {
+	if (buffer == NULL || bufferSize < 16) {
 		return STATUS_INVALID;
 	}
 	
@@ -1075,7 +1092,7 @@ StatusCode MIFARE_Ultralight_Write(
 	StatusCode result;
 	
 	// Sanity check
-	if (buffer == nullptr || bufferSize < 4) {
+	if (buffer == NULL || bufferSize < 4) {
 		return STATUS_INVALID;
 	}
 	
@@ -1343,7 +1360,7 @@ StatusCode PCD_MIFARE_Transceive(
 	uint8_t cmdBuffer[18]; // We need room for 16 bytes data and 2 bytes CRC_A.
 	
 	// Sanity check
-	if (sendData == nullptr || sendLen > 16) {
+	if (sendData == NULL || sendLen > 16) {
 		return STATUS_INVALID;
 	}
 	

@@ -12,6 +12,7 @@
 
 #include "deprecated.h"
 #include <stdint.h>
+#include <stddef.h>
 #include <stdbool.h>
 
 #ifndef MFRC522_SPICLOCK
@@ -292,10 +293,17 @@ typedef struct {
 } MFRC522_GPIO_cfg_t;
 
 typedef struct {
+	void (*exchange)(const uint8_t* send, uint8_t* rcv, size_t len, void* ctx);
+
+	void* ctx;
+} MFRC522_SPI_cfg_t;
+
+typedef struct {
 	uint8_t chipSelectPin;
 	uint8_t resetPowerDownPin;
 
 	MFRC522_GPIO_cfg_t gpio_cfg;
+	MFRC522_SPI_cfg_t  spi_cfg;
 } MFRC522_cfg_t;
 
 typedef struct {
