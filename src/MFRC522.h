@@ -293,10 +293,29 @@ typedef struct {
 } MFRC522_GPIO_cfg_t;
 
 typedef struct {
+	/**
+	 * @brief SPI exchange callback
+	 * @param send Buffer to write tp she bus.
+	 * @param rcv Pointer to SPI read buffer. If NULL, it should be ignored
+	 * by callback.
+	 * @param len Length of data that should be sent
+	 * @param ctx Context pointer provided by this structure
+	 */
 	void (*exchange)(const uint8_t* send, uint8_t* rcv, size_t len, void* ctx);
 
 	void* ctx;
 } MFRC522_SPI_cfg_t;
+
+typedef struct {
+	/**
+	 * @brief Callback for processing the log messages (optional)
+	 * @param msg Log message
+	 * @param ctx Context pointer provided by this structure
+	 */
+	void (*write)(const char* msg, void* ctx);
+
+	void* ctx;
+} MFRC522_log_cfg_t;
 
 typedef struct {
 	uint8_t chipSelectPin;
@@ -304,6 +323,7 @@ typedef struct {
 
 	MFRC522_GPIO_cfg_t gpio_cfg;
 	MFRC522_SPI_cfg_t  spi_cfg;
+	MFRC522_log_cfg_t  log_cfg;
 } MFRC522_cfg_t;
 
 typedef struct {
