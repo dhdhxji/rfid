@@ -5,24 +5,105 @@
 */
 
 #include "MFRC522.h"
+#include <assert.h>
 
 #define GPIO_SET_LEVEL(mfrc, io, level) \
-	mfrc->cfg->gpio_cfg.set_level((io), (level), mfrc->cfg->gpio_cfg.ctx)
-
+{\
+	assert(mfrc->cfg->gpio_cfg.set_level);\
+	mfrc->cfg->gpio_cfg.set_level((io), (level), mfrc->cfg->gpio_cfg.ctx);\
+}
 #define GPIO_GET_LEVEL(mfrc, io, level) \
-	mfrc->cfg->gpio_cfg.get_level((io), mfrc->cfg->gpio_cfg.ctx)
+	{\
+		assert(mfrc->cfg->gpio_cfg.get_level);\
+		mfrc->cfg->gpio_cfg.get_level((io), mfrc->cfg->gpio_cfg.ctx);\
+	}
 
 
 #define SPI_EXCHANGE(mfrc, send, rcv, len) \
+{\
+	assert(mfrc->cfg->spi_cfg.exchange);\
 	mfrc->cfg->spi_cfg.exchange(\
 		send,\
 		rcv,\
 		len,\
 		mfrc->cfg->spi_cfg.ctx\
-	)
+	);\	
+}
 
 #define SPI_SEND(mfrc, send, len) SPI_EXCHANGE(mfrc, send, NULL, len)
 
+
+static size_t mfrc_strlen(const char* str) {
+	//	This code will be optimized to simple strlenm if it 
+	//build with standard library
+
+	int i = 0;
+	for(;; ++i) {
+		if(str[i] == '\0') {
+			return i;
+		}
+	}
+}
+
+static int8_t log_write(
+	const MFRC522_t* mfrc, const uint8_t* msg, size_t len
+) {
+	if(mfrc->cfg->log_cfg.write == NULL) {
+		return -1;
+	}
+
+	return mfrc->cfg->log_cfg.write(msg, len, mfrc->cfg->log_cfg.ctx);
+}
+
+static uint8_t log_print(const MFRC522_t* mfrc, const char* msg) {
+	if(mfrc->cfg->log_cfg.write == NULL) {
+		return 1;
+	}
+
+	log_write(mfrc, msg, strlen(msg));		
+
+	return 0;
+}
+
+static uint8_t log_println(const MFRC522_t* mfrc, const char* msg) {
+	return log_print(mfrc, msg) && log_print(mfrc, "\n");
+}
+
+const static char int_hex_map[] = {
+	[0] = '0',
+	[1] = '1',
+	[2] = '2',
+	[3] = '3',
+	[4] = '4',
+	[5] = '5',
+	[6] = '6',
+	[7] = '7',
+	[8] = '8', 
+	[9] = '9',
+	[10] = 'A',
+	[11] = 'B',
+	[12] = 'C',
+	[13] = 'D',
+	[14] = 'E',
+	[15] = 'F'
+};
+
+static uint8_t print_hex(const MFRC522_t* mfrc, uint32_t val) {
+	int start_pos = 32;
+	for(; start_pos >= 8; start_pos-=8) {
+		uint8_t octet = (val >> (start_pos - 8)) & 0xff;
+		if(octet > 0) {
+			break;
+		}
+	}
+
+	for(int i = start_pos; i >= 0; i-=4) {
+		uint8_t quartet = (val >> (i - 4)) & 0xf;
+		log_write(mfrc, &int_hex_map[i], 1);
+	}
+
+	return start_pos / 8;
+}
 
 
 /////////////////////////////////////////////////////////////////////////////////////
