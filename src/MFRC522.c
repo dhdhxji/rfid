@@ -45,6 +45,17 @@ static size_t mfrc_strlen(const char* str) {
 	}
 }
 
+static void* mfrc_memcpy(void* dst, const void* src, size_t size) {
+	uint8_t* dst_u = dst;
+	const uint8_t* src_u = src;
+
+	for(size_t i = 0; i < size; ++i) {
+		dst_u[i] = src_u[i];
+	}
+
+	return dst;
+}
+
 static int8_t log_write(
 	const MFRC522_t* mfrc, const uint8_t* msg, size_t len
 ) {
@@ -1212,7 +1223,7 @@ StatusCode MIFARE_Ultralight_Write(
 	uint8_t cmdBuffer[6];
 	cmdBuffer[0] = PICC_CMD_UL_WRITE;
 	cmdBuffer[1] = page;
-	memcpy(&cmdBuffer[2], buffer, 4);
+	mfrc_memcpy(&cmdBuffer[2], buffer, 4);
 	
 	// Perform the write
 	result = PCD_MIFARE_Transceive(mfrc, cmdBuffer, 6, false); // Adds CRC_A and checks that the response is MF_ACK.
@@ -1480,7 +1491,7 @@ StatusCode PCD_MIFARE_Transceive(
 	}
 	
 	// Copy sendData[] to cmdBuffer[] and add CRC_A
-	memcpy(cmdBuffer, sendData, sendLen);
+	mfrc_memcpy(cmdBuffer, sendData, sendLen);
 	result = PCD_CalculateCRC(mfrc, cmdBuffer, sendLen, &cmdBuffer[sendLen]);
 	if (result != STATUS_OK) { 
 		return result;
