@@ -309,10 +309,10 @@ typedef struct {
 typedef struct {
 	/**
 	 * @brief Callback for processing the log messages (optional)
-	 * @param msg Log message
+	 * @param msg Log message (or part of log message)
 	 * @param ctx Context pointer provided by this structure
 	 */
-	void (*write)(const char* msg, void* ctx);
+	size_t (*write)(const char* msg, size_t len, void* ctx);
 
 	void* ctx;
 } MFRC522_log_cfg_t;
