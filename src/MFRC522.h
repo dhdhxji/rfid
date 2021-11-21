@@ -10,7 +10,6 @@
 #ifndef MFRC522_h
 #define MFRC522_h
 
-#include "deprecated.h"
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
