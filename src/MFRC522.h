@@ -318,12 +318,34 @@ typedef struct {
 } MFRC522_log_cfg_t;
 
 typedef struct {
+	/**
+	 * @brief Callback function to [ase the program for the amount of time
+	 * @param time Time, in milliseconds, to pase program for
+	 * @param ctx User defined context pointer, it will be passed to the 
+	 * time callbacks
+	 */
+	void (*delay_ms)(uint32_t time, void* ctx);
+
+	/**
+	 * @brief Callback to get the current system time in milliseconds since
+	 * start/timer start. Returned value should be increasing over the time.
+	 * @param ctx User defined context pointer, it will be passed to the 
+	 * time callbacks
+	 * @return uint32_t TIme since start, in milliseconds
+	 */
+	uint32_t (*time_ms)(void* ctx);
+
+	void* ctx;
+} MFRC522_time_cfg_t;
+
+typedef struct {
 	uint8_t chipSelectPin;
 	uint8_t resetPowerDownPin;
 
 	MFRC522_GPIO_cfg_t gpio_cfg;
 	MFRC522_SPI_cfg_t  spi_cfg;
 	MFRC522_log_cfg_t  log_cfg;
+	MFRC522_time_cfg_t time_cfg;
 } MFRC522_cfg_t;
 
 typedef struct {

@@ -147,6 +147,18 @@ static uint8_t log_print_dec(const MFRC522_t* mfrc, int32_t val) {
 	}
 }
 
+static void delay_ms(const MFRC522_t* mfrc, uint32_t ms) {
+	assert(mfrc->cfg->time_cfg.delay_ms);
+
+	mfrc->cfg->time_cfg.delay_ms(ms, mfrc->cfg->time_cfg.ctx);
+}
+
+static uint32_t time_ms(const MFRC522_t* mfrc) {
+	assert(mfrc->cfg->time_cfg.time_ms);
+
+	return mfrc->cfg->time_cfg.time_ms(mfrc->cfg->time_cfg.ctx);
+}
+
 
 /////////////////////////////////////////////////////////////////////////////////////
 // Functions for setting up the Arduino
@@ -352,7 +364,7 @@ StatusCode PCD_CalculateCRC(
 	// indicate that the CRC calculation is complete in a loop. If the
 	// calculation is not indicated as complete in ~90ms, then time out
 	// the operation.
-	const uint32_t deadline = millis() + 89;
+	const uint32_t deadline = time_ms(mfrc) + 89;
 
 	do {
 		// DivIrqReg[7..0] bits are: Set2 reserved reserved MfinActIRq reserved CRCIRq reserved reserved
@@ -364,9 +376,9 @@ StatusCode PCD_CalculateCRC(
 			result[1] = PCD_ReadRegisterSingleByte(mfrc, CRCResultRegH);
 			return STATUS_OK;
 		}
-		yield();
+		//yield();
 	}
-	while ((uint32_t)(millis()) < deadline);
+	while ((uint32_t)(time_ms(mfrc)) < deadline);
 
 	// 89ms passed and nothing happened. Communication with the MFRC522 might be down.
 	return STATUS_TIMEOUT;
@@ -388,7 +400,7 @@ void PCD_Reset(MFRC522_t* mfrc) {
 	uint8_t count = 0;
 	do {
 		// Wait for the PowerDown bit in CommandReg to be cleared (max 3x50ms)
-		delay(50);
+		delay_ms(mfrc, 50);
 	} while ((PCD_ReadRegisterSingleByte(mfrc, CommandReg) & (1 << 4)) && (++count) < 3);
 } // End PCD_Reset()
 
@@ -542,14 +554,14 @@ void PCD_SoftPowerUp(MFRC522_t* mfrc){
 	val &= ~(1<<4);// set PowerDown bit ( bit 4 ) to 0 
 	PCD_WriteRegisterSingleByte(mfrc, CommandReg, val);//write new value to the command register
 	// wait until PowerDown bit is cleared (this indicates end of wake up procedure) 
-	const uint32_t timeout = (uint32_t)millis() + 500;// create timer for timeout (just in case) 
+	const uint32_t timeout = (uint32_t)time_ms(mfrc) + 500;// create timer for timeout (just in case) 
 	
-	while(millis()<=timeout){ // set timeout to 500 ms 
+	while(time_ms(mfrc)<=timeout){ // set timeout to 500 ms 
 		val = PCD_ReadRegisterSingleByte(mfrc, CommandReg);// Read state of the command register
 		if(val & (1<<4)){ // if powerdown bit is 0 
 			break;// wake up procedure is finished 
 		}
-		yield();
+		//yield();
 	}
 }
 
@@ -628,7 +640,7 @@ StatusCode PCD_CommunicateWithPICC(
 	// When they are set in the ComIrqReg register, then the command is
 	// considered complete. If the command is not indicated as complete in
 	// ~36ms, then consider the command as timed out.
-	const uint32_t deadline = millis() + 36;
+	const uint32_t deadline = time_ms(mfrc) + 36;
 	bool completed = false;
 
 	do {
@@ -640,9 +652,9 @@ StatusCode PCD_CommunicateWithPICC(
 		if (n & 0x01) {						// Timer interrupt - nothing received in 25ms
 			return STATUS_TIMEOUT;
 		}
-		yield();
+		//yield();
 	}
-	while ((uint32_t)(millis()) < deadline);
+	while ((uint32_t)(time_ms(mfrc)) < deadline);
 
 	// 36ms and nothing happened. Communication with the MFRC522 might be down.
 	if (!completed) {
