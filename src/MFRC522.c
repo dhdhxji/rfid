@@ -227,7 +227,7 @@ void PCD_WriteRegisterSingleByte(
 ) {
 	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, LOW);		// Select slave
 	
-	SPI_SEND(mfrc, &reg, 1);
+	SPI_SEND(mfrc, (const uint8_t*)&reg, 1);
 	SPI_SEND(mfrc, &value, 1);
 
 	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, HIGH);		// Release slave again
@@ -244,7 +244,7 @@ void PCD_WriteRegister(
 	uint8_t* values		///< The values to write. uint8_t array.
 ) {
 	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, LOW);		// Select slave
-	SPI_SEND(mfrc, &reg, 1); // MSB == 0 is for writing. LSB is not used in address. Datasheet section 8.1.2.3.
+	SPI_SEND(mfrc, (const uint8_t*)&reg, 1); // MSB == 0 is for writing. LSB is not used in address. Datasheet section 8.1.2.3.
 	for (uint8_t index = 0; index < count; index++) {
 		SPI_SEND(mfrc, &values[index], 1);
 	}
