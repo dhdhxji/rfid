@@ -11,11 +11,9 @@
 #define MFRC522_h
 
 #include "deprecated.h"
-// Enable integer limits
-#define __STDC_LIMIT_MACROS
 #include <stdint.h>
-#include <Arduino.h>
-#include <SPI.h>
+#include <stddef.h>
+#include <stdbool.h>
 
 #ifndef MFRC522_SPICLOCK
 #define MFRC522_SPICLOCK (4000000u)	// MFRC522 accept upto 10MHz, set to 4MHz.
@@ -33,7 +31,7 @@
 //
 // Version 0.0 (0x90)
 // Philips Semiconductors; Preliminary Specification Revision 2.0 - 01 August 2005; 16.1 self-test
-const byte MFRC522_firmware_referenceV0_0[] PROGMEM = {
+const uint8_t MFRC522_firmware_referenceV0_0[] = {
 	0x00, 0x87, 0x98, 0x0f, 0x49, 0xFF, 0x07, 0x19,
 	0xBF, 0x22, 0x30, 0x49, 0x59, 0x63, 0xAD, 0xCA,
 	0x7F, 0xE3, 0x4E, 0x03, 0x5C, 0x4E, 0x49, 0x50,
@@ -45,7 +43,7 @@ const byte MFRC522_firmware_referenceV0_0[] PROGMEM = {
 };
 // Version 1.0 (0x91)
 // NXP Semiconductors; Rev. 3.8 - 17 September 2014; 16.1.1 self-test
-const byte MFRC522_firmware_referenceV1_0[] PROGMEM = {
+const uint8_t MFRC522_firmware_referenceV1_0[] = {
 	0x00, 0xC6, 0x37, 0xD5, 0x32, 0xB7, 0x57, 0x5C,
 	0xC2, 0xD8, 0x7C, 0x4D, 0xD9, 0x70, 0xC7, 0x73,
 	0x10, 0xE6, 0xD2, 0xAA, 0x5E, 0xA1, 0x3E, 0x5A,
@@ -57,7 +55,7 @@ const byte MFRC522_firmware_referenceV1_0[] PROGMEM = {
 };
 // Version 2.0 (0x92)
 // NXP Semiconductors; Rev. 3.8 - 17 September 2014; 16.1.1 self-test
-const byte MFRC522_firmware_referenceV2_0[] PROGMEM = {
+const uint8_t MFRC522_firmware_referenceV2_0[] = {
 	0x00, 0xEB, 0x66, 0xBA, 0x57, 0xBF, 0x23, 0x95,
 	0xD0, 0xE3, 0x0D, 0x3D, 0x27, 0x89, 0x5C, 0xDE,
 	0x9D, 0x3B, 0xA7, 0x00, 0x21, 0x5B, 0x89, 0x82,
@@ -69,7 +67,7 @@ const byte MFRC522_firmware_referenceV2_0[] PROGMEM = {
 };
 // Clone
 // Fudan Semiconductor FM17522 (0x88)
-const byte FM17522_firmware_reference[] PROGMEM = {
+const uint8_t FM17522_firmware_reference[] = {
 	0x00, 0xD6, 0x78, 0x8C, 0xE2, 0xAA, 0x0C, 0x18,
 	0x2A, 0xB8, 0x7A, 0x7F, 0xD3, 0x6A, 0xCF, 0x0B,
 	0xB1, 0x37, 0x63, 0x4B, 0x69, 0xAE, 0x91, 0xC7,
@@ -95,7 +93,7 @@ typedef enum {
 	ErrorReg				= 0x06 << 1,	// error bits showing the error status of the last command executed 
 	Status1Reg				= 0x07 << 1,	// communication status bits
 	Status2Reg				= 0x08 << 1,	// receiver and transmitter status bits
-	FIFODataReg				= 0x09 << 1,	// input and output of 64 byte FIFO buffer
+	FIFODataReg				= 0x09 << 1,	// input and output of 64 uint8_t FIFO buffer
 	FIFOLevelReg			= 0x0A << 1,	// number of bytes stored in the FIFO buffer
 	WaterLevelReg			= 0x0B << 1,	// level for FIFO underflow and overflow warning
 	ControlReg				= 0x0C << 1,	// miscellaneous control registers
@@ -162,7 +160,7 @@ typedef enum {
 typedef enum {
 	PCD_Idle				= 0x00,		// no action, cancels current command execution
 	PCD_Mem					= 0x01,		// stores 25 bytes into the internal buffer
-	PCD_GenerateRandomID	= 0x02,		// generates a 10-byte random ID number
+	PCD_GenerateRandomID	= 0x02,		// generates a 10-uint8_t random ID number
 	PCD_CalcCRC				= 0x03,		// activates the CRC coprocessor or performs a self-test
 	PCD_Transmit			= 0x04,		// transmits data from the FIFO buffer
 	PCD_NoCmdChange			= 0x07,		// no command change, can be used to modify the CommandReg register bits without affecting the command, for example, the PowerDown bit
@@ -204,15 +202,15 @@ typedef enum {
 	// The read/write commands can also be used for MIFARE Ultralight.
 	PICC_CMD_MF_AUTH_KEY_A	= 0x60,		// Perform authentication with Key A
 	PICC_CMD_MF_AUTH_KEY_B	= 0x61,		// Perform authentication with Key B
-	PICC_CMD_MF_READ		= 0x30,		// Reads one 16 byte block from the authenticated sector of the PICC. Also used for MIFARE Ultralight.
-	PICC_CMD_MF_WRITE		= 0xA0,		// Writes one 16 byte block to the authenticated sector of the PICC. Called "COMPATIBILITY WRITE" for MIFARE Ultralight.
+	PICC_CMD_MF_READ		= 0x30,		// Reads one 16 uint8_t block from the authenticated sector of the PICC. Also used for MIFARE Ultralight.
+	PICC_CMD_MF_WRITE		= 0xA0,		// Writes one 16 uint8_t block to the authenticated sector of the PICC. Called "COMPATIBILITY WRITE" for MIFARE Ultralight.
 	PICC_CMD_MF_DECREMENT	= 0xC0,		// Decrements the contents of a block and stores the result in the internal data register.
 	PICC_CMD_MF_INCREMENT	= 0xC1,		// Increments the contents of a block and stores the result in the internal data register.
 	PICC_CMD_MF_RESTORE		= 0xC2,		// Reads the contents of a block into the internal data register.
 	PICC_CMD_MF_TRANSFER	= 0xB0,		// Writes the contents of the internal data register to a block.
 	// The commands used for MIFARE Ultralight (from http://www.nxp.com/documents/data_sheet/MF0ICU1.pdf, Section 8.6)
 	// The PICC_CMD_MF_READ and PICC_CMD_MF_WRITE can also be used for MIFARE Ultralight.
-	PICC_CMD_UL_WRITE		= 0xA2		// Writes one 4 byte page to the PICC.
+	PICC_CMD_UL_WRITE		= 0xA2		// Writes one 4 uint8_t page to the PICC.
 } PICC_Command;
 	
 // MIFARE constants that does not fit anywhere else
@@ -253,20 +251,101 @@ typedef enum {
 	
 // A struct used for passing the UID of a PICC.
 typedef struct {
-	byte		size;			// Number of bytes in the UID. 4, 7 or 10.
-	byte		uidByte[10];
-	byte		sak;			// The SAK (Select acknowledge) byte returned from the PICC after successful selection.
+	uint8_t		size;			// Number of bytes in the UID. 4, 7 or 10.
+	uint8_t		uidByte[10];
+	uint8_t		sak;			// The SAK (Select acknowledge) uint8_t returned from the PICC after successful selection.
 } Uid;
 
 // A struct used for passing a MIFARE Crypto1 key
 typedef struct {
-	byte		keyByte[MF_KEY_SIZE];
+	uint8_t		keyByte[MF_KEY_SIZE];
 } MIFARE_Key;
 
 
+/*
+ *	Configuration structures
+*/
+typedef enum {
+	INPUT,
+	OUTPUT
+} MFRC_GPIO_direction_t;
+
+typedef enum {
+	LOW = 0,
+	HIGH = 1
+} MFRC_GPIO_level_t;
+
 typedef struct {
-	byte chipSelectPin;
-	byte resetPowerDownPin;
+	/**
+	 * @brief Callback function to set the logic level on the pin. 
+	 */
+	void (*set_level)(uint8_t pin, uint8_t level, void* ctx);
+
+	/**
+	 * @brief Callback function to read the logic level on the pin
+	 */
+	uint8_t (*get_level)(uint8_t pin, void* ctx);
+
+	/**
+	 * @brief Context pointer, that will be sent to get/set callbacks.
+	 */
+	void* ctx;
+} MFRC522_GPIO_cfg_t;
+
+typedef struct {
+	/**
+	 * @brief SPI exchange callback
+	 * @param send Buffer to write tp she bus.
+	 * @param rcv Pointer to SPI read buffer. If NULL, it should be ignored
+	 * by callback.
+	 * @param len Length of data that should be sent
+	 * @param ctx Context pointer provided by this structure
+	 */
+	void (*exchange)(const uint8_t* send, uint8_t* rcv, size_t len, void* ctx);
+
+	void* ctx;
+} MFRC522_SPI_cfg_t;
+
+typedef struct {
+	/**
+	 * @brief Callback for processing the log messages (optional)
+	 * @param msg Log message (or part of log message)
+	 * @param ctx Context pointer provided by this structure
+	 */
+	size_t (*write)(const char* msg, size_t len, void* ctx);
+
+	void* ctx;
+} MFRC522_log_cfg_t;
+
+typedef struct {
+	/**
+	 * @brief Callback function to [ase the program for the amount of time
+	 * @param time Time, in milliseconds, to pase program for
+	 * @param ctx User defined context pointer, it will be passed to the 
+	 * time callbacks
+	 */
+	void (*delay_ms)(uint32_t time, void* ctx);
+
+	/**
+	 * @brief Callback to get the current system time in milliseconds since
+	 * start/timer start. Returned value should be increasing over the time.
+	 * @param ctx User defined context pointer, it will be passed to the 
+	 * time callbacks
+	 * @return uint32_t TIme since start, in milliseconds
+	 */
+	uint32_t (*time_ms)(void* ctx);
+
+	void* ctx;
+} MFRC522_time_cfg_t;
+
+typedef struct {
+	uint8_t chipSelectPin;
+	uint8_t resetPowerDownPin;
+
+	MFRC522_GPIO_cfg_t gpio_cfg;
+	MFRC522_SPI_cfg_t  spi_cfg;
+	MFRC522_log_cfg_t  log_cfg;
+	MFRC522_time_cfg_t time_cfg;
 } MFRC522_cfg_t;
 
 typedef struct {
@@ -280,19 +359,19 @@ typedef struct {
 void MFRC522_init(const MFRC522_cfg_t* cfg, MFRC522_t* mfrc);
 //*** Call it in init ***
 //void PCD_Init();
-//void PCD_Init(byte resetPowerDownPin);
-//void PCD_Init(byte chipSelectPin, byte resetPowerDownPin);
+//void PCD_Init(uint8_t resetPowerDownPin);
+//void PCD_Init(uint8_t chipSelectPin, uint8_t resetPowerDownPin);
 
 /////////////////////////////////////////////////////////////////////////////////////
 // Basic interface functions for communicating with the MFRC522
 /////////////////////////////////////////////////////////////////////////////////////
-void PCD_WriteRegister(MFRC522_t* mfrc, PCD_Register reg, byte value);
-void PCD_WriteRegister(MFRC522_t* mfrc, PCD_Register reg, byte count, byte *values);
-byte PCD_ReadRegister(MFRC522_t* mfrc, PCD_Register reg);
-void PCD_ReadRegister(MFRC522_t* mfrc, PCD_Register reg, byte count, byte *values, byte rxAlign /*  = 0 */);
-void PCD_SetRegisterBitMask(MFRC522_t* mfrc, PCD_Register reg, byte mask);
-void PCD_ClearRegisterBitMask(MFRC522_t* mfrc, PCD_Register reg, byte mask);
-StatusCode PCD_CalculateCRC(MFRC522_t* mfrc, byte *data, byte length, byte *result);
+void PCD_WriteRegisterSingleByte(MFRC522_t* mfrc, PCD_Register reg, uint8_t value);
+void PCD_WriteRegister(MFRC522_t* mfrc, PCD_Register reg, uint8_t count, uint8_t *values);
+uint8_t PCD_ReadRegisterSingleByte(MFRC522_t* mfrc, PCD_Register reg);
+void PCD_ReadRegister(MFRC522_t* mfrc, PCD_Register reg, uint8_t count, uint8_t *values, uint8_t rxAlign /*  = 0 */);
+void PCD_SetRegisterBitMask(MFRC522_t* mfrc, PCD_Register reg, uint8_t mask);
+void PCD_ClearRegisterBitMask(MFRC522_t* mfrc, PCD_Register reg, uint8_t mask);
+StatusCode PCD_CalculateCRC(MFRC522_t* mfrc, uint8_t *data, uint8_t length, uint8_t *result);
 
 /////////////////////////////////////////////////////////////////////////////////////
 // Functions for manipulating the MFRC522
@@ -300,8 +379,8 @@ StatusCode PCD_CalculateCRC(MFRC522_t* mfrc, byte *data, byte length, byte *resu
 void PCD_Reset(MFRC522_t* mfrc);
 void PCD_AntennaOn(MFRC522_t* mfrc);
 void PCD_AntennaOff(MFRC522_t* mfrc);
-byte PCD_GetAntennaGain(MFRC522_t* mfrc);
-void PCD_SetAntennaGain(MFRC522_t* mfrc, byte mask);
+uint8_t PCD_GetAntennaGain(MFRC522_t* mfrc);
+void PCD_SetAntennaGain(MFRC522_t* mfrc, uint8_t mask);
 bool PCD_PerformSelfTest(MFRC522_t* mfrc);
 
 /////////////////////////////////////////////////////////////////////////////////////
@@ -315,78 +394,78 @@ void PCD_SoftPowerUp(MFRC522_t* mfrc);
 /////////////////////////////////////////////////////////////////////////////////////
 StatusCode PCD_TransceiveData(
 	MFRC522_t* mfrc, 
-	byte *sendData, 
-	byte sendLen, 
-	byte *backData, 
-	byte *backLen, 
-	byte *validBits /*  = nullptr */, 
-	byte rxAlign /*  = 0 */, 
+	uint8_t *sendData, 
+	uint8_t sendLen, 
+	uint8_t *backData, 
+	uint8_t *backLen, 
+	uint8_t *validBits /*  = nullptr */, 
+	uint8_t rxAlign /*  = 0 */, 
 	bool checkCRC /*  = false */
 );
 
 StatusCode PCD_CommunicateWithPICC(
 	MFRC522_t* mfrc, 
-	byte command, 
-	byte waitIRq, 
-	byte *sendData, 
-	byte sendLen, 
-	byte *backData /*  = nullptr */, 
-	byte *backLen /*  = nullptr */, 
-	byte *validBits /*  = nullptr */, 
-	byte rxAlign /*  = 0 */, 
+	uint8_t command, 
+	uint8_t waitIRq, 
+	uint8_t *sendData, 
+	uint8_t sendLen, 
+	uint8_t *backData /*  = nullptr */, 
+	uint8_t *backLen /*  = nullptr */, 
+	uint8_t *validBits /*  = nullptr */, 
+	uint8_t rxAlign /*  = 0 */, 
 	bool checkCRC /*  = false */
 );
-StatusCode PICC_RequestA(MFRC522_t* mfrc, byte *bufferATQA, byte *bufferSize);
-StatusCode PICC_WakeupA(MFRC522_t* mfrc, byte *bufferATQA, byte *bufferSize);
-StatusCode PICC_REQA_or_WUPA(MFRC522_t* mfrc, byte command, byte *bufferATQA, byte *bufferSize);
-StatusCode PICC_Select(MFRC522_t* mfrc, Uid *uid, byte validBits /*  = 0 */);
+StatusCode PICC_RequestA(MFRC522_t* mfrc, uint8_t *bufferATQA, uint8_t *bufferSize);
+StatusCode PICC_WakeupA(MFRC522_t* mfrc, uint8_t *bufferATQA, uint8_t *bufferSize);
+StatusCode PICC_REQA_or_WUPA(MFRC522_t* mfrc, uint8_t command, uint8_t *bufferATQA, uint8_t *bufferSize);
+StatusCode PICC_Select(MFRC522_t* mfrc, Uid *uid, uint8_t validBits /*  = 0 */);
 StatusCode PICC_HaltA(MFRC522_t* mfrc);
 
 /////////////////////////////////////////////////////////////////////////////////////
 // Functions for communicating with MIFARE PICCs
 /////////////////////////////////////////////////////////////////////////////////////
-StatusCode PCD_Authenticate(MFRC522_t* mfrc, byte command, byte blockAddr, MIFARE_Key *key, Uid *uid);
+StatusCode PCD_Authenticate(MFRC522_t* mfrc, uint8_t command, uint8_t blockAddr, MIFARE_Key *key, Uid *uid);
 void PCD_StopCrypto1(MFRC522_t* mfrc);
-StatusCode MIFARE_Read(MFRC522_t* mfrc, byte blockAddr, byte *buffer, byte *bufferSize);
-StatusCode MIFARE_Write(MFRC522_t* mfrc, byte blockAddr, byte *buffer, byte bufferSize);
-StatusCode MIFARE_Ultralight_Write(MFRC522_t* mfrc, byte page, byte *buffer, byte bufferSize);
-StatusCode MIFARE_Decrement(MFRC522_t* mfrc, byte blockAddr, int32_t delta);
-StatusCode MIFARE_Increment(MFRC522_t* mfrc, byte blockAddr, int32_t delta);
-StatusCode MIFARE_Restore(MFRC522_t* mfrc, byte blockAddr);
-StatusCode MIFARE_Transfer(MFRC522_t* mfrc, byte blockAddr);
-StatusCode MIFARE_GetValue(MFRC522_t* mfrc, byte blockAddr, int32_t *value);
-StatusCode MIFARE_SetValue(MFRC522_t* mfrc, byte blockAddr, int32_t value);
-StatusCode PCD_NTAG216_AUTH(MFRC522_t* mfrc, byte *passWord, byte pACK[]);
+StatusCode MIFARE_Read(MFRC522_t* mfrc, uint8_t blockAddr, uint8_t *buffer, uint8_t *bufferSize);
+StatusCode MIFARE_Write(MFRC522_t* mfrc, uint8_t blockAddr, uint8_t *buffer, uint8_t bufferSize);
+StatusCode MIFARE_Ultralight_Write(MFRC522_t* mfrc, uint8_t page, uint8_t *buffer, uint8_t bufferSize);
+StatusCode MIFARE_Decrement(MFRC522_t* mfrc, uint8_t blockAddr, int32_t delta);
+StatusCode MIFARE_Increment(MFRC522_t* mfrc, uint8_t blockAddr, int32_t delta);
+StatusCode MIFARE_Restore(MFRC522_t* mfrc, uint8_t blockAddr);
+StatusCode MIFARE_Transfer(MFRC522_t* mfrc, uint8_t blockAddr);
+StatusCode MIFARE_GetValue(MFRC522_t* mfrc, uint8_t blockAddr, int32_t *value);
+StatusCode MIFARE_SetValue(MFRC522_t* mfrc, uint8_t blockAddr, int32_t value);
+StatusCode PCD_NTAG216_AUTH(MFRC522_t* mfrc, uint8_t *passWord, uint8_t pACK[]);
 
 /////////////////////////////////////////////////////////////////////////////////////
 // Support functions
 /////////////////////////////////////////////////////////////////////////////////////
 StatusCode PCD_MIFARE_Transceive(
 	MFRC522_t* mfrc, 
-	byte *sendData, 
-	byte sendLen, 
+	uint8_t *sendData, 
+	uint8_t sendLen, 
 	bool acceptTimeout /*  = false */
 );
 // old function used too much memory, now name moved to flash; if you need char, copy from flash to memory
-//const char *GetStatusCodeName(byte code);
-static const __FlashStringHelper *GetStatusCodeName(StatusCode code);
-static PICC_Type PICC_GetType(MFRC522_t* mfrc, byte sak);
+//const char *GetStatusCodeName(uint8_t code);
+const char* GetStatusCodeName(StatusCode code);
+PICC_Type PICC_GetType(MFRC522_t* mfrc, uint8_t sak);
 // old function used too much memory, now name moved to flash; if you need char, copy from flash to memory
-//const char *PICC_GetTypeName(byte type);
-static const __FlashStringHelper *PICC_GetTypeName(MFRC522_t* mfrc, PICC_Type type);
+//const char *PICC_GetTypeName(uint8_t type);
+const char* PICC_GetTypeName(PICC_Type type);
 
 // Support functions for debuging
 void PCD_DumpVersionToSerial(MFRC522_t* mfrc);
 void PICC_DumpToSerial(MFRC522_t* mfrc, Uid *uid);
 void PICC_DumpDetailsToSerial(MFRC522_t* mfrc, Uid *uid);
 void PICC_DumpMifareClassicToSerial(MFRC522_t* mfrc, Uid *uid, PICC_Type piccType, MIFARE_Key *key);
-void PICC_DumpMifareClassicSectorToSerial(MFRC522_t* mfrc, Uid *uid, MIFARE_Key *key, byte sector);
+void PICC_DumpMifareClassicSectorToSerial(MFRC522_t* mfrc, Uid *uid, MIFARE_Key *key, uint8_t sector);
 void PICC_DumpMifareUltralightToSerial(MFRC522_t* mfrc);
 
 // Advanced functions for MIFARE
-void MIFARE_SetAccessBits(MFRC522_t* mfrc, byte *accessBitBuffer, byte g0, byte g1, byte g2, byte g3);
+void MIFARE_SetAccessBits(MFRC522_t* mfrc, uint8_t *accessBitBuffer, uint8_t g0, uint8_t g1, uint8_t g2, uint8_t g3);
 bool MIFARE_OpenUidBackdoor(MFRC522_t* mfrc, bool logErrors);
-bool MIFARE_SetUid(MFRC522_t* mfrc, byte *newUid, byte uidSize, bool logErrors);
+bool MIFARE_SetUid(MFRC522_t* mfrc, uint8_t *newUid, uint8_t uidSize, bool logErrors);
 bool MIFARE_UnbrickUidSector(MFRC522_t* mfrc, bool logErrors);
 
 /////////////////////////////////////////////////////////////////////////////////////
@@ -395,6 +474,6 @@ bool MIFARE_UnbrickUidSector(MFRC522_t* mfrc, bool logErrors);
 bool PICC_IsNewCardPresent(MFRC522_t* mfrc);
 bool PICC_ReadCardSerial(MFRC522_t* mfrc);
 
-StatusCode MIFARE_TwoStepHelper(MFRC522_t* mfrc, byte command, byte blockAddr, int32_t data);
+StatusCode MIFARE_TwoStepHelper(MFRC522_t* mfrc, uint8_t command, uint8_t blockAddr, int32_t data);
 
 #endif
