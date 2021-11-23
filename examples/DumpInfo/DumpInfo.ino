@@ -50,7 +50,7 @@ void gpio_set_level(uint8_t pin, uint8_t level, void* ctx) {
 }
 
 size_t log_write(const char* msg, size_t len, void* ctx) {
-	Serial.write((const uint8_t*)msg, len);
+	return Serial.write((const uint8_t*)msg, len);
 }
 
 void spi_begin(void* ctx) {

@@ -97,8 +97,9 @@ static uint8_t log_print(const MFRC522_t* mfrc, const char* msg) {
 	return 0;
 }
 
-static uint8_t log_println(const MFRC522_t* mfrc, const char* msg) {
-	return log_print(mfrc, msg) && log_print(mfrc, "\n");
+static void log_println(const MFRC522_t* mfrc, const char* msg) {
+	log_print(mfrc, msg);
+	log_print(mfrc, "\n");
 }
 
 const static char int_hex_map[] = {
