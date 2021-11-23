@@ -30,7 +30,7 @@ static void spi_begin(const MFRC522_t* mfrc) {
 static void spi_exchange(
 	const MFRC522_t* mfrc, 
 	const uint8_t* send, 
-	uint8_t rcv, 
+	uint8_t* rcv, 
 	size_t len
 ) {
 	assert(mfrc->cfg->spi_cfg.exchange);
