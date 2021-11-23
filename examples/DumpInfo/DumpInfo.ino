@@ -50,15 +50,14 @@ void gpio_set_level(uint8_t pin, uint8_t level, void* ctx) {
 }
 
 size_t log_write(const char* msg, size_t len, void* ctx) {
-	Serial.write((const uint8_t*)msg, len);
+	return Serial.write((const uint8_t*)msg, len);
 }
 
-void spi_exchange(const uint8_t* send, uint8_t* rcv, size_t len, void* ctx) {
-	const uint8_t cs = (const uint32_t)ctx;
-	
-	SPI.beginTransaction(SPISettings(MFRC522_SPICLOCK, MSBFIRST, SPI_MODE0));
-	digitalWrite(cs, LOW);
+void spi_begin(void* ctx) {
+ 	SPI.beginTransaction(SPISettings(MFRC522_SPICLOCK, MSBFIRST, SPI_MODE0));
+}
 
+void spi_exchange(const uint8_t* send, uint8_t* rcv, size_t len, void* ctx) {	
 	for(size_t i = 0; i < len; ++i) {
 		uint8_t read = SPI.transfer(send[i]);
 
@@ -66,7 +65,9 @@ void spi_exchange(const uint8_t* send, uint8_t* rcv, size_t len, void* ctx) {
 			rcv[i] = read;
 		}
 	}
-	digitalWrite(cs, HIGH);
+}
+
+void spi_end(void* ctx) {
 	SPI.endTransaction();
 }
 
@@ -87,7 +88,9 @@ MFRC522_cfg_t mfrc522cfg = {
 		.ctx = NULL
 	},
 	.spi_cfg = {
+		.begin = spi_begin,
 		.exchange = spi_exchange,
+		.end = spi_end,
 		.ctx = (void*)SS_PIN
 	},
 	.log_cfg = {
@@ -109,12 +112,8 @@ void setup() {
 	Serial.begin(115200);		// Initialize serial communications with the PC
 	while (!Serial);		// Do nothing if no serial port is opened (added for Arduinos based on ATMEGA32U4)
 
-	Serial.println(MISO);
-
 	pinMode(SS_PIN, OUTPUT);
 	pinMode(RST_PIN, OUTPUT);
-	pinMode(MISO, INPUT);
-	pinMode(MOSI, OUTPUT);
 
 	SPI.begin();			// Init SPI bus
 	MFRC522_init(&mfrc522cfg, &mfrc);

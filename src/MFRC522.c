@@ -19,18 +19,39 @@
 	}
 
 
-#define SPI_EXCHANGE(mfrc, send, rcv, len) \
-{\
-	assert(mfrc->cfg->spi_cfg.exchange);\
-	mfrc->cfg->spi_cfg.exchange(\
-		send,\
-		rcv,\
-		len,\
-		mfrc->cfg->spi_cfg.ctx\
-	);\
+static void spi_begin(const MFRC522_t* mfrc) {
+	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, GPIO_LOW);
+	
+	if(mfrc->cfg->spi_cfg.begin) {
+		mfrc->cfg->spi_cfg.begin(mfrc->cfg->spi_cfg.ctx);
+	}
 }
 
-#define SPI_SEND(mfrc, send, len) SPI_EXCHANGE(mfrc, send, NULL, len)
+static void spi_exchange(
+	const MFRC522_t* mfrc, 
+	const uint8_t* send, 
+	uint8_t* rcv, 
+	size_t len
+) {
+	assert(mfrc->cfg->spi_cfg.exchange);
+	mfrc->cfg->spi_cfg.exchange(
+		send,
+		rcv,
+		len,
+		mfrc->cfg->spi_cfg.ctx
+	);
+}
+
+static void spi_end(const MFRC522_t* mfrc) {
+	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, GPIO_HIGH);
+
+	if(mfrc->cfg->spi_cfg.end) {
+		mfrc->cfg->spi_cfg.end(mfrc->cfg->spi_cfg.ctx);
+	}
+}
+
+
+#define SPI_SEND(mfrc, send, len) spi_exchange(mfrc, send, NULL, len)
 
 
 static size_t mfrc_strlen(const char* str) {
@@ -76,8 +97,9 @@ static uint8_t log_print(const MFRC522_t* mfrc, const char* msg) {
 	return 0;
 }
 
-static uint8_t log_println(const MFRC522_t* mfrc, const char* msg) {
-	return log_print(mfrc, msg) && log_print(mfrc, "\n");
+static void log_println(const MFRC522_t* mfrc, const char* msg) {
+	log_print(mfrc, msg);
+	log_print(mfrc, "\n");
 }
 
 const static char int_hex_map[] = {
@@ -101,16 +123,16 @@ const static char int_hex_map[] = {
 
 static uint8_t log_print_hex(const MFRC522_t* mfrc, uint32_t val) {
 	int start_pos = 32;
-	for(; start_pos >= 8; start_pos-=8) {
+	for(; start_pos > 8; start_pos-=8) {
 		uint8_t octet = (val >> (start_pos - 8)) & 0xff;
 		if(octet > 0) {
 			break;
 		}
 	}
 
-	for(int i = start_pos; i >= 0; i-=4) {
+	for(int i = start_pos; i > 0; i-=4) {
 		uint8_t quartet = (val >> (i - 4)) & 0xf;
-		log_write(mfrc, &int_hex_map[i], 1);
+		log_write(mfrc, &int_hex_map[quartet], 1);
 	}
 
 	return start_pos / 8;
@@ -129,15 +151,20 @@ static uint32_t mfrc_upow(uint32_t n, uint32_t power) {
 	return res;
 }
 
-static uint8_t log_print_dec(const MFRC522_t* mfrc, int32_t val) {
+static void log_print_dec(const MFRC522_t* mfrc, int32_t val) {
 	//Finding the highest rank
 	int32_t abs_val = (val < 0) ? -val : val;
 	if(abs_val != val) {
 		log_write(mfrc, "-", 1);
 	}
 
+	if(val == 0) {
+		log_write(mfrc, "0", 1);
+		return 1;
+	}
+
 	uint8_t rank = 0;
-	for(;mfrc_upow(10, rank) < abs_val; ++rank);
+	for(;mfrc_upow(10, rank) <= abs_val; ++rank);
 
 	for(int i = rank-1; i > 0; --i) {
 		uint8_t digit = (abs_val / mfrc_upow(10, i)) % 10;
@@ -166,32 +193,20 @@ static uint32_t time_ms(const MFRC522_t* mfrc) {
 void MFRC522_init(const MFRC522_cfg_t* cfg, MFRC522_t* mfrc) {
 	mfrc->cfg = cfg;
 
-	// Enable the antenna driver pins TX1 and TX2 (they were disabled by the reset)
-	bool hardReset = false;
-
-	// Set the chipSelectPin as digital output, do not select the slave yet
-	//pinMode(mfrc->cfg->chipSelectPin, OUTPUT);
 	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, GPIO_HIGH);
 	
 	// If a valid pin number has been set, pull device out of power down / reset state.
-	/*if (mfrc->cfg->resetPowerDownPin != UNUSED_PIN) {
-		// First set the resetPowerDownPin as digital input, to check the MFRC522 power down mode.
-		pinMode(mfrc->cfg->resetPowerDownPin, INPUT);
-	
-		if (digitalRead(mfrc->cfg->resetPowerDownPin) == LOW) {	// The MFRC522 chip is in power down mode.
-			pinMode(mfrc->cfg->resetPowerDownPin, OUTPUT);		// Now set the resetPowerDownPin as digital output.
-			GPIO_SET_LEVEL(mfrc, mfrc->cfg->resetPowerDownPin, LOW);		// Make sure we have a clean LOW state.
-			delayMicroseconds(2);				// 8.8.1 Reset timing requirements says about 100ns. Let us be generous: 2μsl
-			GPIO_SET_LEVEL(mfrc, mfrc->cfg->resetPowerDownPin, HIGH);		// Exit power down mode. This triggers a hard reset.
-			// Section 8.8.2 in the datasheet says the oscillator start-up time is the start up time of the crystal + 37,74μs. Let us be generous: 50ms.
-			delay(50);
-			hardReset = true;
-		}
-	}*/
+	if (mfrc->cfg->resetPowerDownPin != UNUSED_PIN) {
+		GPIO_SET_LEVEL(mfrc, mfrc->cfg->resetPowerDownPin, GPIO_LOW);		// Make sure we have a clean LOW state.
+		delay_ms(mfrc,1);				// 8.8.1 Reset timing requirements says about 100ns. Let us be generous: 2μsl
+		GPIO_SET_LEVEL(mfrc, mfrc->cfg->resetPowerDownPin, GPIO_HIGH);		// Exit power down mode. This triggers a hard reset.
 
-	//if (!hardReset) { // Perform a soft reset if we haven't triggered a hard reset above.
-	PCD_Reset(mfrc);
-	//}
+		// Section 8.8.2 in the datasheet says the oscillator start-up time is the start up time of the crystal + 37,74μs. Let us be generous: 50ms.
+		delay_ms(mfrc, 50);
+	}
+	else {
+		PCD_Reset(mfrc);
+	}
 	
 	// Reset baud rates
 	PCD_WriteRegisterSingleByte(mfrc, TxModeReg, 0x00);
@@ -209,6 +224,8 @@ void MFRC522_init(const MFRC522_cfg_t* cfg, MFRC522_t* mfrc) {
 	
 	PCD_WriteRegisterSingleByte(mfrc, TxASKReg, 0x40);		// Default 0x00. Force a 100 % ASK modulation independent of the ModGsPReg register setting
 	PCD_WriteRegisterSingleByte(mfrc, ModeReg, 0x3D);		// Default 0x3F. Set the preset value for the CRC coprocessor for the CalcCRC command to 0x6363 (ISO 14443-3 part 6.2.4)
+	
+	// Enable the antenna driver pins TX1 and TX2 (they were disabled by the reset)
 	PCD_AntennaOn(mfrc);
 }
 
@@ -225,12 +242,7 @@ void PCD_WriteRegisterSingleByte(
 	PCD_Register reg,	///< The register to write to. One of the PCD_Register enums.
 	uint8_t value			///< The value to write.
 ) {
-	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, GPIO_LOW);		// Select slave
-	
-	SPI_SEND(mfrc, (const uint8_t*)&reg, 1);
-	SPI_SEND(mfrc, &value, 1);
-
-	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, GPIO_HIGH);		// Release slave again
+	PCD_WriteRegister(mfrc, reg, 1, &value);
 } // End PCD_WriteRegister()
 
 /**
@@ -243,12 +255,10 @@ void PCD_WriteRegister(
 	uint8_t count,			///< The number of bytes to write to the register
 	uint8_t* values		///< The values to write. uint8_t array.
 ) {
-	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, GPIO_LOW);		// Select slave
+	spi_begin(mfrc);
 	SPI_SEND(mfrc, (const uint8_t*)&reg, 1); // MSB == 0 is for writing. LSB is not used in address. Datasheet section 8.1.2.3.
-	for (uint8_t index = 0; index < count; index++) {
-		SPI_SEND(mfrc, &values[index], 1);
-	}
-	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, GPIO_HIGH);		// Release slave again
+	SPI_SEND(mfrc, values, count);
+	spi_end(mfrc);
 } // End PCD_WriteRegister()
 
 /**
@@ -292,28 +302,28 @@ void PCD_ReadRegister(
 	uint8_t address = 0x80 | reg;				// MSB == 1 is for reading. LSB is not used in address. Datasheet section 8.1.2.3.
 	uint8_t index = 0;							// Index in values array.
 	
-	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, GPIO_LOW);		// Select slave
 	count--;								// One read is performed outside of the loop
 	
+	spi_begin(mfrc);
 	SPI_SEND(mfrc, &address, 1); // Tell MFRC522 which address we want to read
 	if (rxAlign) {		// Only update bit positions rxAlign..7 in values[0]
 		// Create bit mask for bit positions rxAlign..7
 		uint8_t mask = (0xFF << rxAlign) & 0xFF;
 		// Read value and tell that we want to read the same address again.
 		uint8_t value;
-		SPI_EXCHANGE(mfrc, &address, &value, 1);
+		spi_exchange(mfrc, &address, &value, 1);
 		// Apply mask to both current value of values[0] and the new data in value.
 		values[0] = (values[0] & ~mask) | (value & mask);
 		index++;
 	}
 	while (index < count) {
-		SPI_EXCHANGE(mfrc, &address, &values[index], 1); // Read value and tell that we want to read the same address again.
+		spi_exchange(mfrc, &address, &values[index], 1); // Read value and tell that we want to read the same address again.
 		index++;
 	}
 
 	uint8_t zero = 0;
-	SPI_EXCHANGE(mfrc, &zero, &values[index], 1); // Read the final byte. Send 0 to stop reading.
-	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, GPIO_HIGH);			// Release slave again
+	spi_exchange(mfrc, &zero, &values[index], 1); // Read the final byte. Send 0 to stop reading.
+	spi_end(mfrc);
 } // End PCD_ReadRegister()
 
 /**
@@ -1815,7 +1825,7 @@ void PICC_DumpMifareClassicSectorToSerial(
 		// Sector number - only on first line
 		if (isSectorTrailer) {
 			if(sector < 10)
-				log_print(mfrc, "   "); // Pad with spaces
+				log_print(mfrc, "  "); // Pad with spaces
 			else
 				log_print(mfrc, "  "); // Pad with spaces
 			log_print_hex(mfrc, sector);
@@ -1854,10 +1864,7 @@ void PICC_DumpMifareClassicSectorToSerial(
 		}
 		// Dump data
 		for (uint8_t index = 0; index < 16; index++) {
-			if(buffer[index] < 0x10)
-				log_print(mfrc, " 0");
-			else
-				log_print(mfrc, " ");
+			log_print(mfrc, " ");
 			log_print_hex(mfrc, buffer[index]);
 			if ((index % 4) == 3) {
 				log_print(mfrc, " ");
@@ -1945,10 +1952,7 @@ void PICC_DumpMifareUltralightToSerial(MFRC522_t* mfrc) {
 			log_print(mfrc, "  ");
 			for (uint8_t index = 0; index < 4; index++) {
 				i = 4 * offset + index;
-				if(buffer[i] < 0x10)
-					log_print(mfrc, " 0");
-				else
-					log_print(mfrc, " ");
+				log_print(mfrc, " ");
 				log_print_hex(mfrc, buffer[i]);
 			}
 			log_println(mfrc, "");

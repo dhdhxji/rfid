@@ -292,6 +292,12 @@ typedef struct {
 
 typedef struct {
 	/**
+	 * @brief Begin SPI transaction callback. May be NULL
+	 * @param ctx Context pointer provided by this structure
+	 */
+	void (*begin)(void* ctx);
+
+	/**
 	 * @brief SPI exchange callback
 	 * @param send Buffer to write tp she bus.
 	 * @param rcv Pointer to SPI read buffer. If NULL, it should be ignored
@@ -300,6 +306,12 @@ typedef struct {
 	 * @param ctx Context pointer provided by this structure
 	 */
 	void (*exchange)(const uint8_t* send, uint8_t* rcv, size_t len, void* ctx);
+
+	/**
+	 * @brief End SPI transaction callback. May be NULL
+	 * @param ctx Context pointer provided by this structure
+	 */
+	void (*end)(void* ctx);
 
 	void* ctx;
 } MFRC522_SPI_cfg_t;
