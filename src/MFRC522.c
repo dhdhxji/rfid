@@ -108,9 +108,9 @@ static uint8_t log_print_hex(const MFRC522_t* mfrc, uint32_t val) {
 		}
 	}
 
-	for(int i = start_pos; i >= 0; i-=4) {
+	for(int i = start_pos; i > 0; i-=4) {
 		uint8_t quartet = (val >> (i - 4)) & 0xf;
-		log_write(mfrc, &int_hex_map[i], 1);
+		log_write(mfrc, &int_hex_map[quartet], 1);
 	}
 
 	return start_pos / 8;
