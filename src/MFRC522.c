@@ -171,7 +171,7 @@ void MFRC522_init(const MFRC522_cfg_t* cfg, MFRC522_t* mfrc) {
 
 	// Set the chipSelectPin as digital output, do not select the slave yet
 	//pinMode(mfrc->cfg->chipSelectPin, OUTPUT);
-	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, HIGH);
+	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, GPIO_HIGH);
 	
 	// If a valid pin number has been set, pull device out of power down / reset state.
 	/*if (mfrc->cfg->resetPowerDownPin != UNUSED_PIN) {
@@ -225,12 +225,12 @@ void PCD_WriteRegisterSingleByte(
 	PCD_Register reg,	///< The register to write to. One of the PCD_Register enums.
 	uint8_t value			///< The value to write.
 ) {
-	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, LOW);		// Select slave
+	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, GPIO_LOW);		// Select slave
 	
 	SPI_SEND(mfrc, (const uint8_t*)&reg, 1);
 	SPI_SEND(mfrc, &value, 1);
 
-	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, HIGH);		// Release slave again
+	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, GPIO_HIGH);		// Release slave again
 } // End PCD_WriteRegister()
 
 /**
@@ -243,12 +243,12 @@ void PCD_WriteRegister(
 	uint8_t count,			///< The number of bytes to write to the register
 	uint8_t* values		///< The values to write. uint8_t array.
 ) {
-	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, LOW);		// Select slave
+	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, GPIO_LOW);		// Select slave
 	SPI_SEND(mfrc, (const uint8_t*)&reg, 1); // MSB == 0 is for writing. LSB is not used in address. Datasheet section 8.1.2.3.
 	for (uint8_t index = 0; index < count; index++) {
 		SPI_SEND(mfrc, &values[index], 1);
 	}
-	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, HIGH);		// Release slave again
+	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, GPIO_HIGH);		// Release slave again
 } // End PCD_WriteRegister()
 
 /**
@@ -292,7 +292,7 @@ void PCD_ReadRegister(
 	uint8_t address = 0x80 | reg;				// MSB == 1 is for reading. LSB is not used in address. Datasheet section 8.1.2.3.
 	uint8_t index = 0;							// Index in values array.
 	
-	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, LOW);		// Select slave
+	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, GPIO_LOW);		// Select slave
 	count--;								// One read is performed outside of the loop
 	
 	SPI_SEND(mfrc, &address, 1); // Tell MFRC522 which address we want to read
@@ -313,7 +313,7 @@ void PCD_ReadRegister(
 
 	uint8_t zero = 0;
 	SPI_EXCHANGE(mfrc, &zero, &values[index], 1); // Read the final byte. Send 0 to stop reading.
-	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, HIGH);			// Release slave again
+	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, GPIO_HIGH);			// Release slave again
 } // End PCD_ReadRegister()
 
 /**
