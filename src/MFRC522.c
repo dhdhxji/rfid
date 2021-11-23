@@ -101,7 +101,7 @@ const static char int_hex_map[] = {
 
 static uint8_t log_print_hex(const MFRC522_t* mfrc, uint32_t val) {
 	int start_pos = 32;
-	for(; start_pos >= 8; start_pos-=8) {
+	for(; start_pos > 8; start_pos-=8) {
 		uint8_t octet = (val >> (start_pos - 8)) & 0xff;
 		if(octet > 0) {
 			break;
