@@ -171,27 +171,21 @@ void MFRC522_init(const MFRC522_cfg_t* cfg, MFRC522_t* mfrc) {
 
 	// Set the chipSelectPin as digital output, do not select the slave yet
 	//pinMode(mfrc->cfg->chipSelectPin, OUTPUT);
-	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, GPIO_HIGH);
 	
 	// If a valid pin number has been set, pull device out of power down / reset state.
-	/*if (mfrc->cfg->resetPowerDownPin != UNUSED_PIN) {
-		// First set the resetPowerDownPin as digital input, to check the MFRC522 power down mode.
-		pinMode(mfrc->cfg->resetPowerDownPin, INPUT);
-	
-		if (digitalRead(mfrc->cfg->resetPowerDownPin) == LOW) {	// The MFRC522 chip is in power down mode.
-			pinMode(mfrc->cfg->resetPowerDownPin, OUTPUT);		// Now set the resetPowerDownPin as digital output.
-			GPIO_SET_LEVEL(mfrc, mfrc->cfg->resetPowerDownPin, LOW);		// Make sure we have a clean LOW state.
-			delayMicroseconds(2);				// 8.8.1 Reset timing requirements says about 100ns. Let us be generous: 2μsl
-			GPIO_SET_LEVEL(mfrc, mfrc->cfg->resetPowerDownPin, HIGH);		// Exit power down mode. This triggers a hard reset.
-			// Section 8.8.2 in the datasheet says the oscillator start-up time is the start up time of the crystal + 37,74μs. Let us be generous: 50ms.
-			delay(50);
-			hardReset = true;
-		}
-	}*/
+	if (mfrc->cfg->resetPowerDownPin != UNUSED_PIN) {
+		GPIO_SET_LEVEL(mfrc, mfrc->cfg->resetPowerDownPin, GPIO_LOW);		// Make sure we have a clean LOW state.
+		delay_ms(mfrc,1);				// 8.8.1 Reset timing requirements says about 100ns. Let us be generous: 2μsl
+		GPIO_SET_LEVEL(mfrc, mfrc->cfg->resetPowerDownPin, GPIO_HIGH);		// Exit power down mode. This triggers a hard reset.
 
-	//if (!hardReset) { // Perform a soft reset if we haven't triggered a hard reset above.
-	PCD_Reset(mfrc);
-	//}
+		// Section 8.8.2 in the datasheet says the oscillator start-up time is the start up time of the crystal + 37,74μs. Let us be generous: 50ms.
+		delay_ms(mfrc, 50);
+	}
+	else {
+		PCD_Reset(mfrc);
+	}
+
+	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, GPIO_HIGH);
 	
 	// Reset baud rates
 	PCD_WriteRegisterSingleByte(mfrc, TxModeReg, 0x00);

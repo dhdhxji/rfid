@@ -113,8 +113,6 @@ void setup() {
 
 	pinMode(SS_PIN, OUTPUT);
 	pinMode(RST_PIN, OUTPUT);
-	pinMode(MISO, INPUT);
-	pinMode(MOSI, OUTPUT);
 
 	SPI.begin();			// Init SPI bus
 	MFRC522_init(&mfrc522cfg, &mfrc);
