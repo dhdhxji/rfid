@@ -10,7 +10,10 @@
 #ifndef MFRC522_h
 #define MFRC522_h
 
-#include "deprecated.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
@@ -266,13 +269,8 @@ typedef struct {
  *	Configuration structures
 */
 typedef enum {
-	INPUT,
-	OUTPUT
-} MFRC_GPIO_direction_t;
-
-typedef enum {
-	LOW = 0,
-	HIGH = 1
+	GPIO_LOW = 0,
+	GPIO_HIGH = 1
 } MFRC_GPIO_level_t;
 
 typedef struct {
@@ -475,5 +473,10 @@ bool PICC_IsNewCardPresent(MFRC522_t* mfrc);
 bool PICC_ReadCardSerial(MFRC522_t* mfrc);
 
 StatusCode MIFARE_TwoStepHelper(MFRC522_t* mfrc, uint8_t command, uint8_t blockAddr, int32_t data);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
+
 
 #endif

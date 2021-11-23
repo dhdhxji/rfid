@@ -38,32 +38,111 @@
 #include <SPI.h>
 #include <MFRC522.h>
 
-#define RST_PIN         9          // Configurable, see typical pin layout above
-#define SS_PIN          10         // Configurable, see typical pin layout above
+#define RST_PIN         22          // Configurable, see typical pin layout above
+#define SS_PIN          21         // Configurable, see typical pin layout above
 
-MFRC522 mfrc522(SS_PIN, RST_PIN);  // Create MFRC522 instance
+uint8_t gpio_get_level(uint8_t pin, void* ctx) {
+	return digitalRead(pin);
+}
+
+void gpio_set_level(uint8_t pin, uint8_t level, void* ctx) {
+	digitalWrite(pin, level);
+}
+
+size_t log_write(const char* msg, size_t len, void* ctx) {
+	Serial.write((const uint8_t*)msg, len);
+}
+
+void spi_exchange(const uint8_t* send, uint8_t* rcv, size_t len, void* ctx) {
+	const uint8_t cs = (const uint32_t)ctx;
+	
+	SPI.beginTransaction(SPISettings(MFRC522_SPICLOCK, MSBFIRST, SPI_MODE0));
+	digitalWrite(cs, LOW);
+
+	for(size_t i = 0; i < len; ++i) {
+		uint8_t read = SPI.transfer(send[i]);
+
+		if(rcv) {
+			rcv[i] = read;
+		}
+	}
+	digitalWrite(cs, HIGH);
+	SPI.endTransaction();
+}
+
+void delay_ms(uint32_t time, void* ctx) {
+	delay(time);
+}
+
+uint32_t time_ms(void* ctx) {
+	return millis();
+}
+
+MFRC522_cfg_t mfrc522cfg = {
+	.chipSelectPin = SS_PIN,
+	.resetPowerDownPin = RST_PIN,
+	.gpio_cfg = {
+		.set_level = gpio_set_level,
+		.get_level = gpio_get_level,
+		.ctx = NULL
+	},
+	.spi_cfg = {
+		.exchange = spi_exchange,
+		.ctx = (void*)SS_PIN
+	},
+	.log_cfg = {
+		.write = log_write,
+		.ctx = NULL
+	},
+	.time_cfg = {
+		.delay_ms = delay_ms,
+		.time_ms = time_ms,
+		.ctx = NULL
+	}
+};
+
+
+MFRC522_t mfrc;
+//(SS_PIN, RST_PIN);  // Create MFRC522 instance
 
 void setup() {
-	Serial.begin(9600);		// Initialize serial communications with the PC
+	Serial.begin(115200);		// Initialize serial communications with the PC
 	while (!Serial);		// Do nothing if no serial port is opened (added for Arduinos based on ATMEGA32U4)
+
+	Serial.println(MISO);
+
+	pinMode(SS_PIN, OUTPUT);
+	pinMode(RST_PIN, OUTPUT);
+	pinMode(MISO, INPUT);
+	pinMode(MOSI, OUTPUT);
+
 	SPI.begin();			// Init SPI bus
-	mfrc522.PCD_Init();		// Init MFRC522
+	MFRC522_init(&mfrc522cfg, &mfrc);
+	//mfrc522.PCD_Init();		// Init MFRC522
 	delay(4);				// Optional delay. Some board do need more time after init to be ready, see Readme
-	mfrc522.PCD_DumpVersionToSerial();	// Show details of PCD - MFRC522 Card Reader details
+	//mfrc522.PCD_DumpVersionToSerial();	// Show details of PCD - MFRC522 Card Reader details
+	PCD_DumpVersionToSerial(&mfrc);
 	Serial.println(F("Scan PICC to see UID, SAK, type, and data blocks..."));
 }
 
 void loop() {
 	// Reset the loop if no new card present on the sensor/reader. This saves the entire process when idle.
-	if ( ! mfrc522.PICC_IsNewCardPresent()) {
+	/* if ( ! mfrc522.PICC_IsNewCardPresent()) {
+		return;
+	} */
+	if( ! PICC_IsNewCardPresent(&mfrc)) {
 		return;
 	}
 
 	// Select one of the cards
-	if ( ! mfrc522.PICC_ReadCardSerial()) {
+	/* if ( ! mfrc522.PICC_ReadCardSerial()) {
 		return;
-	}
+	} */
+	if( ! PICC_ReadCardSerial(&mfrc)) {
+		return;
+	} 
 
 	// Dump debug info about the card; PICC_HaltA() is automatically called
-	mfrc522.PICC_DumpToSerial(&(mfrc522.uid));
+	//mfrc522.PICC_DumpToSerial(&(mfrc522.uid));
+	PICC_DumpToSerial(&mfrc, &mfrc.uid);
 }
