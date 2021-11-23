@@ -151,15 +151,20 @@ static uint32_t mfrc_upow(uint32_t n, uint32_t power) {
 	return res;
 }
 
-static uint8_t log_print_dec(const MFRC522_t* mfrc, int32_t val) {
+static void log_print_dec(const MFRC522_t* mfrc, int32_t val) {
 	//Finding the highest rank
 	int32_t abs_val = (val < 0) ? -val : val;
 	if(abs_val != val) {
 		log_write(mfrc, "-", 1);
 	}
 
+	if(val == 0) {
+		log_write(mfrc, "0", 1);
+		return 1;
+	}
+
 	uint8_t rank = 0;
-	for(;mfrc_upow(10, rank) < abs_val; ++rank);
+	for(;mfrc_upow(10, rank) <= abs_val; ++rank);
 
 	for(int i = rank-1; i > 0; --i) {
 		uint8_t digit = (abs_val / mfrc_upow(10, i)) % 10;
