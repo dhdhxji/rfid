@@ -19,18 +19,39 @@
 	}
 
 
-#define SPI_EXCHANGE(mfrc, send, rcv, len) \
-{\
-	assert(mfrc->cfg->spi_cfg.exchange);\
-	mfrc->cfg->spi_cfg.exchange(\
-		send,\
-		rcv,\
-		len,\
-		mfrc->cfg->spi_cfg.ctx\
-	);\
+static void spi_begin(const MFRC522_t* mfrc) {
+	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, GPIO_LOW);
+	
+	if(mfrc->cfg->spi_cfg.begin) {
+		mfrc->cfg->spi_cfg.begin(mfrc->cfg->spi_cfg.ctx);
+	}
 }
 
-#define SPI_SEND(mfrc, send, len) SPI_EXCHANGE(mfrc, send, NULL, len)
+static void spi_exchange(
+	const MFRC522_t* mfrc, 
+	const uint8_t* send, 
+	uint8_t rcv, 
+	size_t len
+) {
+	assert(mfrc->cfg->spi_cfg.exchange);
+	mfrc->cfg->spi_cfg.exchange(
+		send,
+		rcv,
+		len,
+		mfrc->cfg->spi_cfg.ctx
+	);
+}
+
+static void spi_end(const MFRC522_t* mfrc) {
+	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, GPIO_HIGH);
+
+	if(mfrc->cfg->spi_cfg.end) {
+		mfrc->cfg->spi_cfg.end(mfrc->cfg->spi_cfg.ctx);
+	}
+}
+
+
+#define SPI_SEND(mfrc, send, len) spi_exchange(mfrc, send, NULL, len)
 
 
 static size_t mfrc_strlen(const char* str) {
@@ -166,8 +187,6 @@ static uint32_t time_ms(const MFRC522_t* mfrc) {
 void MFRC522_init(const MFRC522_cfg_t* cfg, MFRC522_t* mfrc) {
 	mfrc->cfg = cfg;
 
-	// Set the chipSelectPin as digital output, do not select the slave yet
-	//pinMode(mfrc->cfg->chipSelectPin, OUTPUT);
 	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, GPIO_HIGH);
 	
 	// If a valid pin number has been set, pull device out of power down / reset state.
@@ -230,10 +249,10 @@ void PCD_WriteRegister(
 	uint8_t count,			///< The number of bytes to write to the register
 	uint8_t* values		///< The values to write. uint8_t array.
 ) {
-	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, GPIO_LOW);		// Select slave
+	spi_begin(mfrc);
 	SPI_SEND(mfrc, (const uint8_t*)&reg, 1); // MSB == 0 is for writing. LSB is not used in address. Datasheet section 8.1.2.3.
 	SPI_SEND(mfrc, values, count);
-	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, GPIO_HIGH);		// Release slave again
+	spi_end(mfrc);
 } // End PCD_WriteRegister()
 
 /**
@@ -277,28 +296,28 @@ void PCD_ReadRegister(
 	uint8_t address = 0x80 | reg;				// MSB == 1 is for reading. LSB is not used in address. Datasheet section 8.1.2.3.
 	uint8_t index = 0;							// Index in values array.
 	
-	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, GPIO_LOW);		// Select slave
 	count--;								// One read is performed outside of the loop
 	
+	spi_begin(mfrc);
 	SPI_SEND(mfrc, &address, 1); // Tell MFRC522 which address we want to read
 	if (rxAlign) {		// Only update bit positions rxAlign..7 in values[0]
 		// Create bit mask for bit positions rxAlign..7
 		uint8_t mask = (0xFF << rxAlign) & 0xFF;
 		// Read value and tell that we want to read the same address again.
 		uint8_t value;
-		SPI_EXCHANGE(mfrc, &address, &value, 1);
+		spi_exchange(mfrc, &address, &value, 1);
 		// Apply mask to both current value of values[0] and the new data in value.
 		values[0] = (values[0] & ~mask) | (value & mask);
 		index++;
 	}
 	while (index < count) {
-		SPI_EXCHANGE(mfrc, &address, &values[index], 1); // Read value and tell that we want to read the same address again.
+		spi_exchange(mfrc, &address, &values[index], 1); // Read value and tell that we want to read the same address again.
 		index++;
 	}
 
 	uint8_t zero = 0;
-	SPI_EXCHANGE(mfrc, &zero, &values[index], 1); // Read the final byte. Send 0 to stop reading.
-	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, GPIO_HIGH);			// Release slave again
+	spi_exchange(mfrc, &zero, &values[index], 1); // Read the final byte. Send 0 to stop reading.
+	spi_end(mfrc);
 } // End PCD_ReadRegister()
 
 /**
