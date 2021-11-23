@@ -1820,7 +1820,7 @@ void PICC_DumpMifareClassicSectorToSerial(
 		// Sector number - only on first line
 		if (isSectorTrailer) {
 			if(sector < 10)
-				log_print(mfrc, "   "); // Pad with spaces
+				log_print(mfrc, "  "); // Pad with spaces
 			else
 				log_print(mfrc, "  "); // Pad with spaces
 			log_print_hex(mfrc, sector);
@@ -1859,10 +1859,7 @@ void PICC_DumpMifareClassicSectorToSerial(
 		}
 		// Dump data
 		for (uint8_t index = 0; index < 16; index++) {
-			if(buffer[index] < 0x10)
-				log_print(mfrc, " 0");
-			else
-				log_print(mfrc, " ");
+			log_print(mfrc, " ");
 			log_print_hex(mfrc, buffer[index]);
 			if ((index % 4) == 3) {
 				log_print(mfrc, " ");
@@ -1950,10 +1947,7 @@ void PICC_DumpMifareUltralightToSerial(MFRC522_t* mfrc) {
 			log_print(mfrc, "  ");
 			for (uint8_t index = 0; index < 4; index++) {
 				i = 4 * offset + index;
-				if(buffer[i] < 0x10)
-					log_print(mfrc, " 0");
-				else
-					log_print(mfrc, " ");
+				log_print(mfrc, " ");
 				log_print_hex(mfrc, buffer[i]);
 			}
 			log_println(mfrc, "");
