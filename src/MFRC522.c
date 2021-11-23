@@ -166,11 +166,9 @@ static uint32_t time_ms(const MFRC522_t* mfrc) {
 void MFRC522_init(const MFRC522_cfg_t* cfg, MFRC522_t* mfrc) {
 	mfrc->cfg = cfg;
 
-	// Enable the antenna driver pins TX1 and TX2 (they were disabled by the reset)
-	bool hardReset = false;
-
 	// Set the chipSelectPin as digital output, do not select the slave yet
 	//pinMode(mfrc->cfg->chipSelectPin, OUTPUT);
+	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, GPIO_HIGH);
 	
 	// If a valid pin number has been set, pull device out of power down / reset state.
 	if (mfrc->cfg->resetPowerDownPin != UNUSED_PIN) {
@@ -184,8 +182,6 @@ void MFRC522_init(const MFRC522_cfg_t* cfg, MFRC522_t* mfrc) {
 	else {
 		PCD_Reset(mfrc);
 	}
-
-	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, GPIO_HIGH);
 	
 	// Reset baud rates
 	PCD_WriteRegisterSingleByte(mfrc, TxModeReg, 0x00);
@@ -203,6 +199,8 @@ void MFRC522_init(const MFRC522_cfg_t* cfg, MFRC522_t* mfrc) {
 	
 	PCD_WriteRegisterSingleByte(mfrc, TxASKReg, 0x40);		// Default 0x00. Force a 100 % ASK modulation independent of the ModGsPReg register setting
 	PCD_WriteRegisterSingleByte(mfrc, ModeReg, 0x3D);		// Default 0x3F. Set the preset value for the CRC coprocessor for the CalcCRC command to 0x6363 (ISO 14443-3 part 6.2.4)
+	
+	// Enable the antenna driver pins TX1 and TX2 (they were disabled by the reset)
 	PCD_AntennaOn(mfrc);
 }
 
@@ -219,12 +217,7 @@ void PCD_WriteRegisterSingleByte(
 	PCD_Register reg,	///< The register to write to. One of the PCD_Register enums.
 	uint8_t value			///< The value to write.
 ) {
-	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, GPIO_LOW);		// Select slave
-	
-	SPI_SEND(mfrc, (const uint8_t*)&reg, 1);
-	SPI_SEND(mfrc, &value, 1);
-
-	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, GPIO_HIGH);		// Release slave again
+	PCD_WriteRegister(mfrc, reg, 1, &value);
 } // End PCD_WriteRegister()
 
 /**
@@ -239,9 +232,7 @@ void PCD_WriteRegister(
 ) {
 	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, GPIO_LOW);		// Select slave
 	SPI_SEND(mfrc, (const uint8_t*)&reg, 1); // MSB == 0 is for writing. LSB is not used in address. Datasheet section 8.1.2.3.
-	for (uint8_t index = 0; index < count; index++) {
-		SPI_SEND(mfrc, &values[index], 1);
-	}
+	SPI_SEND(mfrc, values, count);
 	GPIO_SET_LEVEL(mfrc, mfrc->cfg->chipSelectPin, GPIO_HIGH);		// Release slave again
 } // End PCD_WriteRegister()
 
