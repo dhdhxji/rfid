@@ -160,7 +160,7 @@ static void log_print_dec(const MFRC522_t* mfrc, int32_t val) {
 
 	if(val == 0) {
 		log_write(mfrc, "0", 1);
-		return 1;
+		return;
 	}
 
 	uint8_t rank = 0;
