@@ -78,7 +78,7 @@ static void* mfrc_memcpy(void* dst, const void* src, size_t size) {
 }
 
 static int8_t log_write(
-	const MFRC522_t* mfrc, const uint8_t* msg, size_t len
+	const MFRC522_t* mfrc, const char* msg, size_t len
 ) {
 	if(mfrc->cfg->log_cfg.write == NULL) {
 		return -1;
@@ -2073,7 +2073,7 @@ bool MIFARE_SetUid(MFRC522_t* mfrc, uint8_t *newUid, uint8_t uidSize, bool logEr
 	}
 	
 	// Authenticate for reading
-	MIFARE_Key key = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+	MIFARE_Key key = {{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}};
 	StatusCode status = PCD_Authenticate(mfrc, PICC_CMD_MF_AUTH_KEY_A, (uint8_t)1, &key, &mfrc->uid);
 	if (status != STATUS_OK) {
 		
